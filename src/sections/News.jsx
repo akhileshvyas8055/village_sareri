@@ -1,0 +1,205 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiCalendar, FiBell, FiInstagram, FiVideo } from 'react-icons/fi';
+
+const News = () => {
+  const [currentInstaIndex, setCurrentInstaIndex] = useState(0);
+
+  const [newsUpdates, setNewsUpdates] = useState([]);
+
+  // Complaint Form State
+  const [complaint, setComplaint] = useState({ name: '', contact: '', details: '', photo: null });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setComplaint({ ...complaint, photo: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const submitComplaint = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const saved = JSON.parse(localStorage.getItem('sareriComplaints') || '[]');
+    const newComplaint = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      ...complaint
+    };
+    localStorage.setItem('sareriComplaints', JSON.stringify([newComplaint, ...saved]));
+    
+    setTimeout(() => {
+      alert("Complaint registered successfully! It will be reviewed by the administration.");
+      setComplaint({ name: '', contact: '', details: '', photo: null });
+      setIsSubmitting(false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    const savedNews = localStorage.getItem('sareriNews');
+    if (savedNews) {
+      try {
+        setNewsUpdates(JSON.parse(savedNews));
+      } catch (e) {
+        console.error('Failed to parse news', e);
+      }
+    }
+  }, []);
+
+
+
+  return (
+    <section id="news" className="py-24 bg-white dark:bg-darkCard transition-colors">
+      <div className="container mx-auto px-4 md:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          
+          {/* News & Updates */}
+          <div>
+            <div className="mb-10">
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-4xl font-bold font-heading text-gray-900 dark:text-white mb-4"
+              >
+                News & <span className="text-saffron">Updates</span>
+              </motion.h2>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="w-16 h-1 bg-saffron rounded-full"
+              />
+            </div>
+
+            <div className="space-y-6">
+              {newsUpdates.length === 0 && (
+                <div className="p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                  <p className="text-gray-500 dark:text-gray-400">No news updates available at the moment.</p>
+                </div>
+              )}
+              {newsUpdates.map((item, index) => (
+                <motion.div 
+                  key={item.id}
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="glass-card p-6 border-l-4 border-l-saffron hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="px-3 py-1 bg-saffron/10 text-saffron text-xs font-bold uppercase rounded-full tracking-wider flex items-center gap-1">
+                      {item.type === 'Notice' && <FiBell />}
+                      {item.type === 'Event' && <FiCalendar />}
+                      {item.type === 'Announcement' && <FiBell />}
+                      {item.type}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{item.date}</span>
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{item.title}</h4>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Register Complaint */}
+          <div>
+            <div className="mb-10">
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-4xl font-bold font-heading text-gray-900 dark:text-white mb-4"
+              >
+                Register <span className="text-red-600">Complaint</span>
+              </motion.h2>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="w-16 h-1 bg-red-600 rounded-full"
+              />
+              <p className="text-gray-600 dark:text-gray-400 mt-4">
+                Submit any issues, suggestions or complaints directly to the village administration.
+              </p>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-white dark:bg-darkCard p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800"
+            >
+              <form onSubmit={submitComplaint} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={complaint.name}
+                    onChange={(e) => setComplaint({...complaint, name: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
+                    placeholder="Enter your name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Number</label>
+                  <input 
+                    type="tel" 
+                    required
+                    value={complaint.contact}
+                    onChange={(e) => setComplaint({...complaint, contact: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
+                    placeholder="Enter your mobile number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Complaint Details</label>
+                  <textarea 
+                    required
+                    rows="4"
+                    value={complaint.details}
+                    onChange={(e) => setComplaint({...complaint, details: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
+                    placeholder="Describe your issue or suggestion..."
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Photo (Optional)</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-saffron/10 file:text-saffron hover:file:bg-saffron/20 transition-all cursor-pointer"
+                  />
+                  {complaint.photo && (
+                    <div className="mt-3">
+                      <img src={complaint.photo} alt="Preview" className="h-24 rounded-lg object-cover border border-gray-200" />
+                    </div>
+                  )}
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full py-4 bg-saffron hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg hover:shadow-xl mt-4"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Complaint'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default News;
