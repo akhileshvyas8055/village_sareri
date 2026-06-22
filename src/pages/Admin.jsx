@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const Admin = () => {
@@ -17,41 +17,39 @@ const Admin = () => {
   const [notifyBody, setNotifyBody] = useState('');
   const [notifyType, setNotifyType] = useState('News Update');
 
-  // Load from local storage
+  // Load from Firestore with real-time sync
   useEffect(() => {
     const authStatus = sessionStorage.getItem('sareriAdminAuth');
     if (authStatus === 'true') {
       setIsAuthenticated(true);
     }
-    
-    const savedNews = localStorage.getItem('sareriNews');
-    if (savedNews) {
-      try {
-        setNews(JSON.parse(savedNews));
-      } catch (e) {
-        // use default
-      }
-    } else {
-      setNews([]);
-    }
 
-    const savedComplaints = localStorage.getItem('sareriComplaints');
-    if (savedComplaints) {
-      try {
-        setComplaints(JSON.parse(savedComplaints));
-      } catch (e) {
-        // ignore
+    // Real-time listener for News
+    const unsubNews = onSnapshot(doc(db, 'adminData', 'news'), (snap) => {
+      if (snap.exists()) {
+        setNews(snap.data().items || []);
       }
-    }
+    });
 
-    const savedRegistrations = localStorage.getItem('sareriKhelRegistrations');
-    if (savedRegistrations) {
-      try {
-        setKhelRegistrations(JSON.parse(savedRegistrations));
-      } catch (e) {
-        // ignore
+    // Real-time listener for Complaints
+    const unsubComplaints = onSnapshot(doc(db, 'adminData', 'complaints'), (snap) => {
+      if (snap.exists()) {
+        setComplaints(snap.data().items || []);
       }
-    }
+    });
+
+    // Real-time listener for Khel Registrations
+    const unsubRegistrations = onSnapshot(doc(db, 'adminData', 'khelRegistrations'), (snap) => {
+      if (snap.exists()) {
+        setKhelRegistrations(snap.data().items || []);
+      }
+    });
+
+    return () => {
+      unsubNews();
+      unsubComplaints();
+      unsubRegistrations();
+    };
   }, []);
 
   const handleLogin = (e) => {
@@ -122,13 +120,19 @@ const Admin = () => {
   };
 
   const handleSave = async () => {
-    localStorage.setItem('sareriNews', JSON.stringify(news));
-    // Auto-trigger push notification for the latest news
-    if (news.length > 0) {
-      const latest = news[0];
-      await handleCirculateNews(latest, true);
+    // Save to Firestore (source of truth)
+    try {
+      await setDoc(doc(db, 'adminData', 'news'), { items: news });
+      // Auto-trigger push notification for the latest news
+      if (news.length > 0) {
+        const latest = news[0];
+        await handleCirculateNews(latest, true);
+      }
+      alert('News & Updates saved successfully!');
+    } catch (error) {
+      console.error('Error saving news:', error);
+      alert('Failed to save. Check your internet connection.');
     }
-    alert('News & Updates saved successfully!');
   };
 
   const handleCirculateNews = async (item, isSilent = false) => {
@@ -177,19 +181,19 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteComplaint = (id) => {
+  const handleDeleteComplaint = async (id) => {
     if(window.confirm('Are you sure you want to delete this complaint?')) {
       const updated = complaints.filter(c => c.id !== id);
       setComplaints(updated);
-      localStorage.setItem('sareriComplaints', JSON.stringify(updated));
+      await setDoc(doc(db, 'adminData', 'complaints'), { items: updated });
     }
   };
 
-  const handleDeleteRegistration = (id) => {
+  const handleDeleteRegistration = async (id) => {
     if(window.confirm('Are you sure you want to delete this registration?')) {
       const updated = khelRegistrations.filter(r => r.id !== id);
       setKhelRegistrations(updated);
-      localStorage.setItem('sareriKhelRegistrations', JSON.stringify(updated));
+      await setDoc(doc(db, 'adminData', 'khelRegistrations'), { items: updated });
     }
   };
 

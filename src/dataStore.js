@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { createContext, useContext } from 'react';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
 
 // Default initial data
 export const defaultData = {
@@ -65,58 +68,75 @@ export const defaultData = {
   ]
 };
 
-// Custom hook to get and set data
+const SITE_DATA_DOC = 'siteContent';
+
+// Custom hook to get and set data — now powered by Firestore with real-time sync
 export const useSiteData = () => {
   const [data, setData] = useState(defaultData);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedData = localStorage.getItem('sareriSiteData');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setData({ ...defaultData, ...parsed });
-      } catch (e) {
-        console.error("Failed to parse site data", e);
+    // Real-time listener on the single siteContent document
+    const unsubscribe = onSnapshot(
+      doc(db, 'siteData', SITE_DATA_DOC),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setData({ ...defaultData, ...snapshot.data() });
+        } else {
+          // First time: seed Firestore with default data
+          setDoc(doc(db, 'siteData', SITE_DATA_DOC), defaultData).catch(console.error);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error listening to site data:', error);
+        // Fallback to localStorage cache
+        const cached = localStorage.getItem('sareriSiteData');
+        if (cached) {
+          try { setData({ ...defaultData, ...JSON.parse(cached) }); } catch (e) { /* ignore */ }
+        }
+        setLoading(false);
       }
-    }
+    );
+
+    return () => unsubscribe();
   }, []);
 
-  const updateData = (newData) => {
+  const updateData = async (newData) => {
     setData(newData);
+    // Save to Firestore (source of truth)
+    try {
+      await setDoc(doc(db, 'siteData', SITE_DATA_DOC), newData);
+    } catch (error) {
+      console.error('Error saving site data to Firestore:', error);
+    }
+    // Also cache locally for offline fallback
     localStorage.setItem('sareriSiteData', JSON.stringify(newData));
   };
 
-  const updateSectionField = (section, field, value) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value
-        }
-      };
-      localStorage.setItem('sareriSiteData', JSON.stringify(newData));
-      return newData;
-    });
+  const updateSectionField = async (section, field, value) => {
+    const newData = {
+      ...data,
+      [section]: {
+        ...data[section],
+        [field]: value
+      }
+    };
+    await updateData(newData);
   };
 
-  const updateArrayItem = (section, id, field, value) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        [section]: prev[section].map(item => 
-          item.id === id ? { ...item, [field]: value } : item
-        )
-      };
-      localStorage.setItem('sareriSiteData', JSON.stringify(newData));
-      return newData;
-    });
+  const updateArrayItem = async (section, id, field, value) => {
+    const newData = {
+      ...data,
+      [section]: data[section].map(item =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    };
+    await updateData(newData);
   };
 
-  return { data, updateData, updateSectionField, updateArrayItem };
+  return { data, loading, updateData, updateSectionField, updateArrayItem };
 };
-
-import { createContext, useContext } from 'react';
 
 export const AdminContext = createContext({
   isEditMode: false,

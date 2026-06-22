@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCalendar, FiBell, FiInstagram, FiVideo, FiCamera, FiUpload } from 'react-icons/fi';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const News = () => {
   const [currentInstaIndex, setCurrentInstaIndex] = useState(0);
@@ -22,33 +24,37 @@ const News = () => {
     }
   };
 
-  const submitComplaint = (e) => {
+  const submitComplaint = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const saved = JSON.parse(localStorage.getItem('sareriComplaints') || '[]');
-    const newComplaint = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString(),
-      ...complaint
-    };
-    localStorage.setItem('sareriComplaints', JSON.stringify([newComplaint, ...saved]));
-    
-    setTimeout(() => {
+    try {
+      // Fetch existing complaints from Firestore
+      const snap = await getDoc(doc(db, 'adminData', 'complaints'));
+      const existing = snap.exists() ? (snap.data().items || []) : [];
+      const newComplaint = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString(),
+        ...complaint
+      };
+      await setDoc(doc(db, 'adminData', 'complaints'), { items: [newComplaint, ...existing] });
+      
       alert("Complaint registered successfully! It will be reviewed by the administration.");
       setComplaint({ name: '', contact: '', details: '', photo: null });
-      setIsSubmitting(false);
-    }, 500);
+    } catch (error) {
+      console.error('Error submitting complaint:', error);
+      alert('Failed to submit complaint. Please try again.');
+    }
+    setIsSubmitting(false);
   };
 
   useEffect(() => {
-    const savedNews = localStorage.getItem('sareriNews');
-    if (savedNews) {
-      try {
-        setNewsUpdates(JSON.parse(savedNews));
-      } catch (e) {
-        console.error('Failed to parse news', e);
+    // Real-time listener for news updates
+    const unsub = onSnapshot(doc(db, 'adminData', 'news'), (snap) => {
+      if (snap.exists()) {
+        setNewsUpdates(snap.data().items || []);
       }
-    }
+    });
+    return () => unsub();
   }, []);
 
 

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { FiUser, FiPhone, FiMapPin, FiActivity, FiCheckCircle } from 'react-icons/fi';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const RegistrationPage = () => {
   const [formData, setFormData] = useState({
@@ -17,18 +19,23 @@ const RegistrationPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Save to local storage for Admin Panel
     const newRegistration = {
       id: Date.now(),
       ...formData,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     };
     
-    const existingRegistrations = JSON.parse(localStorage.getItem('sareriKhelRegistrations') || '[]');
-    localStorage.setItem('sareriKhelRegistrations', JSON.stringify([newRegistration, ...existingRegistrations]));
+    try {
+      // Fetch existing registrations from Firestore
+      const snap = await getDoc(doc(db, 'adminData', 'khelRegistrations'));
+      const existing = snap.exists() ? (snap.data().items || []) : [];
+      await setDoc(doc(db, 'adminData', 'khelRegistrations'), { items: [newRegistration, ...existing] });
+    } catch (error) {
+      console.error('Error saving registration:', error);
+    }
     
     setIsSubmitted(true);
     setFormData({
