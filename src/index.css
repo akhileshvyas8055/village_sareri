@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Yatra+One&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-saffron: #FF9933;
   --color-green: #138808;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FiUser, FiPhone, FiMapPin, FiActivity, FiCheckCircle } from 'react-icons/fi';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, push, set } from 'firebase/database';
+import { rtdb } from '../firebase';
 
 const RegistrationPage = () => {
   const [formData, setFormData] = useState({
@@ -29,10 +29,9 @@ const RegistrationPage = () => {
     };
     
     try {
-      // Fetch existing registrations from Firestore
-      const snap = await getDoc(doc(db, 'adminData', 'khelRegistrations'));
-      const existing = snap.exists() ? (snap.data().items || []) : [];
-      await setDoc(doc(db, 'adminData', 'khelRegistrations'), { items: [newRegistration, ...existing] });
+      const registrationsRef = ref(rtdb, 'adminData/khelRegistrations');
+      const newRegistrationRef = push(registrationsRef);
+      await set(newRegistrationRef, { id: newRegistrationRef.key, ...newRegistration });
     } catch (error) {
       console.error('Error saving registration:', error);
     }

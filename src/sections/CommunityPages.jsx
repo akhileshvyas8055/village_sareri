@@ -29,6 +29,15 @@ const CommunityPages = () => {
       desc: 'Latest updates, traditions, and cultural highlights from Bheru Kheda, Brahmano Ki Sareri.',
       color: 'from-emerald-400 to-teal-600',
       image: '' // Add your photo path here, e.g., '/photos/bheru.jpg'
+    },
+    {
+      id: 4,
+      title: 'Shree Charbhuja Nath',
+      handle: '@shree_.charbhujanath_',
+      url: 'https://www.instagram.com/shree_.charbhujanath_?igsh=MTBwbGdkbjVyNnZsbg==',
+      desc: 'Official page of Shree Charbhuja Nath Ji. Stay connected for daily darshan and temple updates.',
+      color: 'from-yellow-400 to-orange-600',
+      image: '' // Add your photo path here
     }
   ];
 
@@ -72,7 +81,7 @@ const CommunityPages = () => {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {pages.map((page, index) => (
             <motion.a
               href={page.url}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCalendar, FiBell, FiInstagram, FiVideo, FiCamera, FiUpload } from 'react-icons/fi';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { FiCalendar, FiBell, FiInstagram, FiVideo, FiCamera, FiUpload, FiMic } from 'react-icons/fi';
+import { ref, push, set, onValue } from 'firebase/database';
+import { db, rtdb } from '../firebase';
 
 const News = () => {
   const [currentInstaIndex, setCurrentInstaIndex] = useState(0);
@@ -12,6 +12,44 @@ const News = () => {
   // Complaint Form State
   const [complaint, setComplaint] = useState({ name: '', contact: '', details: '', photo: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser doesn't support voice recognition. Please type your complaint.");
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'hi-IN'; // Default to Hindi
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setComplaint(prev => ({ 
+        ...prev, 
+        details: prev.details ? prev.details + ' ' + transcript : transcript 
+      }));
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      alert('Could not hear properly. Please try again.');
+      setIsListening(false);
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    
+    recognition.start();
+  };
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -28,15 +66,14 @@ const News = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Fetch existing complaints from Firestore
-      const snap = await getDoc(doc(db, 'adminData', 'complaints'));
-      const existing = snap.exists() ? (snap.data().items || []) : [];
       const newComplaint = {
-        id: Date.now(),
         date: new Date().toLocaleDateString(),
         ...complaint
       };
-      await setDoc(doc(db, 'adminData', 'complaints'), { items: [newComplaint, ...existing] });
+      
+      const complaintsRef = ref(rtdb, 'adminData/complaints');
+      const newComplaintRef = push(complaintsRef);
+      await set(newComplaintRef, { id: newComplaintRef.key, ...newComplaint });
       
       alert("Complaint registered successfully! It will be reviewed by the administration.");
       setComplaint({ name: '', contact: '', details: '', photo: null });
@@ -48,13 +85,19 @@ const News = () => {
   };
 
   useEffect(() => {
-    // Real-time listener for news updates
-    const unsub = onSnapshot(doc(db, 'adminData', 'news'), (snap) => {
-      if (snap.exists()) {
-        setNewsUpdates(snap.data().items || []);
+    // Real-time listener for news updates from Realtime Database
+    const newsRef = ref(rtdb, 'adminData/news');
+    const unsub = onValue(newsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Data is an object of objects because of push, convert to array
+        const newsArray = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+        setNewsUpdates(newsArray);
+      } else {
+        setNewsUpdates([]);
       }
     });
-    return () => unsub();
+    return () => unsub(); // onValue returns an unsubscribe function? No, in v9 onValue returns an unsubscribe function. Yes.
   }, []);
 
 
@@ -123,7 +166,7 @@ const News = () => {
                 viewport={{ once: true }}
                 className="text-4xl font-bold font-heading text-gray-900 dark:text-white mb-4"
               >
-                Register <span className="text-red-600">Complaint</span>
+                Register <span className="text-red-600">Complaint</span> / शिकायत <span className="text-red-600">दर्ज करें</span>
               </motion.h2>
               <motion.div 
                 initial={{ opacity: 0, scale: 0 }}
@@ -131,8 +174,9 @@ const News = () => {
                 viewport={{ once: true }}
                 className="w-16 h-1 bg-red-600 rounded-full"
               />
-              <p className="text-gray-600 dark:text-gray-400 mt-4">
-                Submit any issues, suggestions or complaints directly to the village administration.
+              <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed">
+                Submit any issues, suggestions or complaints directly to the village administration.<br />
+                अपनी समस्या, सुझाव या शिकायत सीधे ग्राम पंचायत तक पहुंचाएं।
               </p>
             </div>
 
@@ -144,44 +188,58 @@ const News = () => {
             >
               <form onSubmit={submitComplaint} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name / पूरा नाम</label>
                   <input 
                     type="text" 
                     required
                     value={complaint.name}
                     onChange={(e) => setComplaint({...complaint, name: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
-                    placeholder="Enter your name"
+                    placeholder="Enter your name / अपना नाम लिखें"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Number</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Number / मोबाइल नंबर</label>
                   <input 
                     type="tel" 
                     required
                     value={complaint.contact}
                     onChange={(e) => setComplaint({...complaint, contact: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
-                    placeholder="Enter your mobile number"
+                    placeholder="Enter your mobile number / अपना मोबाइल नंबर लिखें"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Complaint Details</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Complaint Details / शिकायत का विवरण</label>
+                    <button 
+                      type="button" 
+                      onClick={startListening}
+                      className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full transition-all border ${
+                        isListening 
+                          ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800 animate-pulse' 
+                          : 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:border-orange-800/50'
+                      }`}
+                    >
+                      <FiMic className={`text-sm ${isListening ? "text-red-600" : ""}`} />
+                      {isListening ? 'Listening...' : 'बोलकर लिखें'}
+                    </button>
+                  </div>
                   <textarea 
                     required
                     rows="4"
                     value={complaint.details}
                     onChange={(e) => setComplaint({...complaint, details: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
-                    placeholder="Describe your issue or suggestion..."
+                    placeholder="Describe your issue or suggestion... / अपनी समस्या या सुझाव यहाँ लिखें..."
                   ></textarea>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attach Evidence (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attach Evidence (Optional) / फोटो जोड़ें (वैकल्पिक)</label>
                   <div className="flex gap-4">
                     <label className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl cursor-pointer transition-colors border border-dashed border-gray-300 dark:border-gray-600">
                       <FiCamera className="text-gray-500 dark:text-gray-400 text-lg" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Click Photo</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Click Photo / फोटो खींचें</span>
                       <input 
                         type="file" 
                         accept="image/*"
@@ -192,7 +250,7 @@ const News = () => {
                     </label>
                     <label className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl cursor-pointer transition-colors border border-dashed border-gray-300 dark:border-gray-600">
                       <FiUpload className="text-gray-500 dark:text-gray-400 text-lg" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload Photo</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload Photo / अपलोड करें</span>
                       <input 
                         type="file" 
                         accept="image/*"
@@ -211,9 +269,9 @@ const News = () => {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="w-full py-4 bg-saffron hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg hover:shadow-xl mt-4"
+                  className="w-full py-4 bg-saffron hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg hover:shadow-xl mt-4 tracking-wide uppercase"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Complaint'}
+                  {isSubmitting ? 'Submitting... / भेजा जा रहा है...' : 'Submit Complaint / शिकायत दर्ज करें'}
                 </button>
               </form>
             </motion.div>

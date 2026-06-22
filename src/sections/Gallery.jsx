@@ -50,15 +50,15 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
         </div>
 
         {images.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6">
             {images.map((item, index) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group border border-gray-200 dark:border-gray-800 bg-black aspect-video flex items-center justify-center"
+                className="relative rounded-2xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group border border-gray-200/50 dark:border-gray-800/50 bg-gray-100 dark:bg-darkCard break-inside-avoid"
               >
                 {item.isVideo ? (
                   <video 
@@ -68,15 +68,22 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
                     muted 
                     playsInline
                     controls
-                    className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (
                   <img 
                     src={item.src} 
                     alt={item.title}
-                    className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                    className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
                   />
                 )}
+
+                {/* Stylish Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 md:p-6 pointer-events-none">
+                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-md">{item.title}</h3>
+                  {item.isVideo && <p className="text-gray-300 text-xs mt-1 uppercase tracking-widest">Video</p>}
+                </div>
               </motion.div>
             ))}
           </div>

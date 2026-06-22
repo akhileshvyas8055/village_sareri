@@ -38,8 +38,8 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
             alt="Sareri Logo" 
             className="w-10 h-10 rounded-full object-cover border-2 border-white/50 shadow-sm"
           />
-          <span className={`font-heading font-bold text-2xl tracking-wide transition-colors ${showSolidNav ? 'text-gray-900 dark:text-white' : 'text-white drop-shadow-md'}`}>
-            Sareri
+          <span className={`font-heading font-bold text-xl md:text-2xl tracking-wide transition-colors ${showSolidNav ? 'text-gray-900 dark:text-white' : 'text-white drop-shadow-md'}`}>
+            Brahmano Ki Sareri
           </span>
         </Link>
 

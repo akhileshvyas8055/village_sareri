@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
-import { collection, addDoc, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { ref, onValue, set, remove, push } from 'firebase/database';
+import { db, rtdb } from '../firebase';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [news, setNews] = useState([]);
   const [complaints, setComplaints] = useState([]);
@@ -17,6 +19,11 @@ const Admin = () => {
   const [notifyBody, setNotifyBody] = useState('');
   const [notifyType, setNotifyType] = useState('News Update');
 
+  // Poll State
+  const [pollData, setPollData] = useState(null);
+  const [newPollQuestion, setNewPollQuestion] = useState('');
+  const [newPollOptions, setNewPollOptions] = useState(['', '']);
+
   // Load from Firestore with real-time sync
   useEffect(() => {
     const authStatus = sessionStorage.getItem('sareriAdminAuth');
@@ -25,30 +32,45 @@ const Admin = () => {
     }
 
     // Real-time listener for News
-    const unsubNews = onSnapshot(doc(db, 'adminData', 'news'), (snap) => {
-      if (snap.exists()) {
-        setNews(snap.data().items || []);
+    const unsubNews = onValue(ref(rtdb, 'adminData/news'), (snap) => {
+      const data = snap.val();
+      if (data) {
+        setNews(Object.values(data).sort((a, b) => b.timestamp - a.timestamp));
+      } else {
+        setNews([]);
       }
     });
 
     // Real-time listener for Complaints
-    const unsubComplaints = onSnapshot(doc(db, 'adminData', 'complaints'), (snap) => {
-      if (snap.exists()) {
-        setComplaints(snap.data().items || []);
+    const unsubComplaints = onValue(ref(rtdb, 'adminData/complaints'), (snap) => {
+      const data = snap.val();
+      if (data) {
+        setComplaints(Object.values(data).reverse());
+      } else {
+        setComplaints([]);
       }
     });
 
     // Real-time listener for Khel Registrations
-    const unsubRegistrations = onSnapshot(doc(db, 'adminData', 'khelRegistrations'), (snap) => {
-      if (snap.exists()) {
-        setKhelRegistrations(snap.data().items || []);
+    const unsubRegistrations = onValue(ref(rtdb, 'adminData/khelRegistrations'), (snap) => {
+      const data = snap.val();
+      if (data) {
+        setKhelRegistrations(Object.values(data).reverse());
+      } else {
+        setKhelRegistrations([]);
       }
+    });
+
+    // Real-time listener for Poll
+    const unsubPoll = onValue(ref(rtdb, 'adminData/poll'), (snap) => {
+      setPollData(snap.val() || null);
     });
 
     return () => {
       unsubNews();
       unsubComplaints();
       unsubRegistrations();
+      unsubPoll();
     };
   }, []);
 
@@ -68,24 +90,27 @@ const Admin = () => {
   };
 
   const handleAddNews = () => {
+    const newRef = push(ref(rtdb, 'adminData/news'));
     const newItem = {
-      id: Date.now(),
+      id: newRef.key,
       type: 'Announcement',
       title: 'New Update Title',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      desc: 'Update description goes here.'
+      desc: 'Update description goes here.',
+      timestamp: Date.now()
     };
-    setNews([newItem, ...news]);
+    set(newRef, newItem);
   };
 
   const handleDeleteNews = (id) => {
     if(window.confirm('Are you sure you want to delete this update?')) {
-      setNews(news.filter(n => n.id !== id));
+      remove(ref(rtdb, `adminData/news/${id}`));
     }
   };
 
   const handleUpdateNews = (id, field, value) => {
-    setNews(news.map(n => n.id === id ? { ...n, [field]: value } : n));
+    const updatedNews = news.map(n => n.id === id ? { ...n, [field]: value } : n);
+    setNews(updatedNews);
   };
 
   const sendPushNotification = async (title, body, type = 'General') => {
@@ -120,9 +145,14 @@ const Admin = () => {
   };
 
   const handleSave = async () => {
-    // Save to Firestore (source of truth)
+    // Save to Firebase RTDB (source of truth)
     try {
-      await setDoc(doc(db, 'adminData', 'news'), { items: news });
+      const updates = {};
+      news.forEach(n => {
+        updates[n.id] = n;
+      });
+      await set(ref(rtdb, 'adminData/news'), updates);
+      
       // Auto-trigger push notification for the latest news
       if (news.length > 0) {
         const latest = news[0];
@@ -183,17 +213,54 @@ const Admin = () => {
 
   const handleDeleteComplaint = async (id) => {
     if(window.confirm('Are you sure you want to delete this complaint?')) {
-      const updated = complaints.filter(c => c.id !== id);
-      setComplaints(updated);
-      await setDoc(doc(db, 'adminData', 'complaints'), { items: updated });
+      await remove(ref(rtdb, `adminData/complaints/${id}`));
     }
   };
 
   const handleDeleteRegistration = async (id) => {
     if(window.confirm('Are you sure you want to delete this registration?')) {
-      const updated = khelRegistrations.filter(r => r.id !== id);
-      setKhelRegistrations(updated);
-      await setDoc(doc(db, 'adminData', 'khelRegistrations'), { items: updated });
+      await remove(ref(rtdb, `adminData/khelRegistrations/${id}`));
+    }
+  };
+
+  const handleAddPollOption = () => {
+    if (newPollOptions.length < 5) setNewPollOptions([...newPollOptions, '']);
+  };
+
+  const handleRemovePollOption = (index) => {
+    if (newPollOptions.length > 2) {
+      setNewPollOptions(newPollOptions.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleUpdatePollOption = (index, value) => {
+    const newOptions = [...newPollOptions];
+    newOptions[index] = value;
+    setNewPollOptions(newOptions);
+  };
+
+  const handleActivatePoll = async () => {
+    if (!newPollQuestion.trim()) return alert("Question is required");
+    if (newPollOptions.some(opt => !opt.trim())) return alert("All options must have text");
+    
+    if (window.confirm("This will replace any currently active poll. Are you sure?")) {
+      const poll = {
+        id: Date.now().toString(),
+        question: newPollQuestion,
+        options: newPollOptions.map(text => ({ text, votes: 0 })),
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      await set(ref(rtdb, 'adminData/poll'), poll);
+      alert("Poll Activated!");
+      setNewPollQuestion('');
+      setNewPollOptions(['', '']);
+    }
+  };
+
+  const handleDeactivatePoll = async () => {
+    if (window.confirm("Are you sure you want to deactivate the current poll?")) {
+      await set(ref(rtdb, 'adminData/poll/isActive'), false);
     }
   };
 
@@ -313,17 +380,27 @@ const Admin = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 text-gray-900">
         <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
           <h2 className="text-2xl font-bold text-center mb-6">Admin Panel</h2>
-          <input 
-            type="password" 
-            placeholder="Enter Password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-saffron mb-4"
-          />
-          <button type="submit" className="w-full btn-primary py-2 rounded-lg">
+          <div className="relative mb-4">
+            <input 
+              type={showPassword ? "text" : "password"} 
+              placeholder="Enter Password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-saffron pr-12"
+            />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-1"
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+            </button>
+          </div>
+          <button type="submit" className="w-full btn-primary py-3 rounded-lg mt-2">
             Login
           </button>
           <div className="mt-4 text-center">
@@ -335,7 +412,7 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 text-gray-900">
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -387,6 +464,12 @@ const Admin = () => {
             className={`px-6 py-3 font-semibold transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'notifications' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             <FiBell className="w-4 h-4" /> Push Notifications
+          </button>
+          <button 
+            onClick={() => setActiveTab('poll')}
+            className={`px-6 py-3 font-semibold transition-colors border-b-2 ${activeTab === 'poll' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Manage Poll
           </button>
         </div>
 
@@ -646,6 +729,111 @@ const Admin = () => {
                   </p>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'poll' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Manage Public Poll</h2>
+            </div>
+            <p className="text-gray-500 text-sm mb-6">Create a public opinion poll that will be displayed on the Home page.</p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Create New Poll */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Create New Poll</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Poll Question</label>
+                    <input 
+                      type="text"
+                      value={newPollQuestion}
+                      onChange={(e) => setNewPollQuestion(e.target.value)}
+                      placeholder="e.g., What should be the theme for next festival?"
+                      className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 transition-all bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Poll Options (Min 2, Max 5)</label>
+                    {newPollOptions.map((opt, idx) => (
+                      <div key={idx} className="flex items-center gap-2 mb-2">
+                        <input 
+                          type="text"
+                          value={opt}
+                          onChange={(e) => handleUpdatePollOption(idx, e.target.value)}
+                          placeholder={`Option ${idx + 1}`}
+                          className="flex-1 px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 transition-all bg-gray-50"
+                        />
+                        {newPollOptions.length > 2 && (
+                          <button 
+                            onClick={() => handleRemovePollOption(idx)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {newPollOptions.length < 5 && (
+                      <button 
+                        onClick={handleAddPollOption}
+                        className="text-sm font-semibold text-purple-600 hover:text-purple-700 mt-2 flex items-center gap-1"
+                      >
+                        <FiPlus /> Add Option
+                      </button>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={handleActivatePoll}
+                    className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md"
+                  >
+                    Publish & Activate Poll
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Poll Stats */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Current Active Poll</h3>
+                {pollData && pollData.isActive ? (
+                  <div>
+                    <h4 className="font-bold text-xl text-gray-900 mb-4">{pollData.question}</h4>
+                    <div className="space-y-4 mb-6">
+                      {pollData.options && pollData.options.map((opt, idx) => {
+                        const totalVotes = pollData.options.reduce((sum, o) => sum + (o.votes || 0), 0);
+                        const percentage = totalVotes > 0 ? Math.round(((opt.votes || 0) / totalVotes) * 100) : 0;
+                        return (
+                          <div key={idx} className="relative">
+                            <div className="flex justify-between items-end mb-1">
+                              <span className="font-medium text-gray-800">{opt.text}</span>
+                              <span className="text-sm font-bold text-gray-600">{opt.votes || 0} Votes ({percentage}%)</span>
+                            </div>
+                            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-purple-500 rounded-full" style={{ width: `${percentage}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="pt-4 border-t border-gray-100">
+                      <button 
+                        onClick={handleDeactivatePoll}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl transition-colors"
+                      >
+                        Deactivate Poll
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-500">
+                    No active poll right now.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

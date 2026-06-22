@@ -2,6 +2,7 @@ import Hero from '../sections/Hero';
 import KhelBanner from '../sections/KhelBanner';
 import Highlights from '../sections/Highlights';
 import WeatherCard from '../components/WeatherCard';
+import PollWidget from '../components/PollWidget';
 
 const Home = () => {
   return (
@@ -14,6 +15,7 @@ const Home = () => {
       </div>
 
       <KhelBanner />
+      <PollWidget />
       <Highlights />
     </div>
   );
