@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCalendar, FiBell, FiInstagram, FiVideo } from 'react-icons/fi';
+import { FiCalendar, FiBell, FiInstagram, FiVideo, FiCamera, FiUpload } from 'react-icons/fi';
 
 const News = () => {
   const [currentInstaIndex, setCurrentInstaIndex] = useState(0);
@@ -171,13 +171,30 @@ const News = () => {
                   ></textarea>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Photo (Optional)</label>
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-saffron/10 file:text-saffron hover:file:bg-saffron/20 transition-all cursor-pointer"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attach Evidence (Optional)</label>
+                  <div className="flex gap-4">
+                    <label className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl cursor-pointer transition-colors border border-dashed border-gray-300 dark:border-gray-600">
+                      <FiCamera className="text-gray-500 dark:text-gray-400 text-lg" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Click Photo</span>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <label className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl cursor-pointer transition-colors border border-dashed border-gray-300 dark:border-gray-600">
+                      <FiUpload className="text-gray-500 dark:text-gray-400 text-lg" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload Photo</span>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                   {complaint.photo && (
                     <div className="mt-3">
                       <img src={complaint.photo} alt="Preview" className="h-24 rounded-lg object-cover border border-gray-200" />

@@ -17,6 +17,7 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
     { name: 'Gallery', href: '/gallery' },
     { name: 'Community', href: '/community' },
     { name: 'News & Complaints', href: '/news' },
+    { name: 'Khel Utsav', href: '/khel-registration' },
   ];
 
   useEffect(() => {

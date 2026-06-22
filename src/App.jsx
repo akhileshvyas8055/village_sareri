@@ -7,6 +7,8 @@ import AboutPage from './pages/AboutPage';
 import GalleryPage from './pages/GalleryPage';
 import CommunityPage from './pages/CommunityPage';
 import NewsPage from './pages/NewsPage';
+import RegistrationPage from './pages/RegistrationPage';
+import NotificationPopup from './components/NotificationPopup';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -51,9 +53,11 @@ function App() {
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/community" element={<CommunityPage />} />
                   <Route path="/news" element={<NewsPage />} />
+                  <Route path="/khel-registration" element={<RegistrationPage />} />
                 </Routes>
               </main>
               <Footer />
+              <NotificationPopup />
               <FloatingAudioButton />
             </>
           } />

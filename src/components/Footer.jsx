@@ -67,7 +67,7 @@ const Footer = () => {
             <ul className="space-y-4 w-full text-center md:text-left">
               <li className="flex flex-col md:flex-row items-center md:items-start gap-3">
                 <FiMapPin className="w-5 h-5 text-saffron shrink-0 mt-1" />
-                <span className="text-gray-400 text-sm">Brahmano Ki Sareri, <br/> Tehsil Asind, District Bhilwara <br/> Rajasthan - 311204</span>
+                <span className="text-gray-400 text-sm">Brahmano Ki Sareri, <br/> Tehsil Asind, District Bhilwara <br/> Rajasthan - 311026</span>
               </li>
               <li className="flex flex-col md:flex-row items-center gap-3">
                 <FiMail className="w-5 h-5 text-saffron shrink-0" />
@@ -106,7 +106,8 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-800/80 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <div className="text-center md:text-left">
-            &copy; {new Date().getFullYear()} <span className="text-white font-semibold">Brahmano Ki Sareri</span>. All rights reserved.
+            &copy; {new Date().getFullYear()} <span className="text-white font-semibold">Brahmano Ki Sareri</span>. All rights reserved. <br className="md:hidden" />
+            <span className="md:ml-2 mt-2 md:mt-0 inline-block">Built with <span className="text-red-500">❤️</span> by <span className="text-white font-semibold">Akhilesh Vyas</span></span>
           </div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-saffron transition-colors relative group">

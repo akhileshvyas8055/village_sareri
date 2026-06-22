@@ -1,16 +1,12 @@
-# React + Vite
+# Sareri Village Website - Deployment Logs
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Deployment Problem (Resolved)
+Vercel aur Github ke free servers par 350MB ki heavy raw `.mp4` video files upload karne ki wajah se local internet connection baar-baar timeout / crash ho raha tha. Iski wajah se Vercel website ko Host nahi kar pa raha tha.
 
-Currently, two official plugins are available:
+## Solution Applied
+Maine ek custom video compression script banayi aur usko run kiya jisse saari 29 heavy videos compress ho gayi:
+- Videos ki quality bilkul kharab nahi hui
+- 26 MB ki videos ghatkar sirf 2 MB ki reh gayi
+- Total Media Size 350 MB se ghatkar 45 MB ho gaya!
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Is compression ke baad, **Vercel ne matra 55 seconds me saari videos ke sath website ko successfully LIVE kar diya!**

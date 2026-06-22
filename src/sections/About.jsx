@@ -39,7 +39,7 @@ const About = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="space-y-6"
+            className="space-y-6 order-2 lg:order-1"
           >
             <h3 className="text-3xl font-heading font-semibold text-gray-800 dark:text-gray-100">
               Brahmano Ki Sareri
@@ -50,7 +50,7 @@ const About = () => {
               के लिए जाना जाता है, जिसे उदयपुर दरबार द्वारा उपहार में दिया गया था।
             </p>
             
-            <div className="pt-4 grid grid-cols-2 gap-6">
+            <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {stats.map((stat) => (
                 <div key={stat.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white dark:bg-darkCard shadow-sm hover:shadow-md transition-shadow">
                   <div className="p-3 rounded-full bg-gray-50 dark:bg-gray-800">
@@ -72,7 +72,7 @@ const About = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] mx-auto mt-8 lg:mt-0 rounded-full overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.15)] ring-8 ring-white dark:ring-darkCard group flex-shrink-0"
+            className="relative w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] mx-auto mt-8 lg:mt-0 rounded-full overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.15)] ring-8 ring-white dark:ring-darkCard group flex-shrink-0 order-1 lg:order-2 mb-8 lg:mb-0"
           >
             <img 
               src="/photos/About.jpeg" 
