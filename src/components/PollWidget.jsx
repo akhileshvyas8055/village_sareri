@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiShare2, FiCheckCircle, FiInstagram } from 'react-icons/fi';
+import { FiShare2, FiCheckCircle } from 'react-icons/fi';
 import { ref, onValue, set } from 'firebase/database';
-import html2canvas from 'html2canvas';
 import { rtdb } from '../firebase';
 
 const PollWidget = () => {
@@ -10,7 +9,6 @@ const PollWidget = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
     const pollRef = ref(rtdb, 'adminData/poll');
@@ -54,51 +52,21 @@ const PollWidget = () => {
   const handleShare = async () => {
     if (!poll) return;
     
-    setIsCapturing(true);
     const shareText = `💬 Village Poll: ${poll.question}\n\nVote now at: ${window.location.origin}/#poll`;
     
-    try {
-      const pollElement = document.getElementById('poll-card-capture');
-      if (pollElement && navigator.share) {
-        // Create an image of the poll
-        const canvas = await html2canvas(pollElement, {
-          scale: 2, // High quality
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        });
-        
-        canvas.toBlob(async (blob) => {
-          const file = new File([blob], 'village-poll.png', { type: 'image/png' });
-          
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: 'Village Poll',
-              text: shareText,
-              files: [file]
-            });
-          } else {
-            // Fallback for browsers that don't support file sharing
-            await navigator.share({
-              title: 'Village Poll',
-              text: shareText,
-              url: window.location.origin + '/#poll'
-            });
-          }
-        }, 'image/png');
-      } else if (navigator.share) {
+    if (navigator.share) {
+      try {
         await navigator.share({
           title: 'Village Poll',
           text: shareText,
           url: window.location.origin + '/#poll'
         });
-      } else {
-        navigator.clipboard.writeText(shareText);
-        alert('Poll link copied! You can share it on WhatsApp or Instagram.');
+      } catch (err) {
+        console.error('Share failed:', err);
       }
-    } catch (err) {
-      console.error('Share failed:', err);
-    } finally {
-      setIsCapturing(false);
+    } else {
+      navigator.clipboard.writeText(shareText);
+      alert('Poll link copied to clipboard! You can paste and share it on WhatsApp.');
     }
   };
 
@@ -110,7 +78,6 @@ const PollWidget = () => {
     <section id="poll" className="py-12 bg-white dark:bg-darkCard transition-colors">
       <div className="container mx-auto px-4 md:px-8 max-w-3xl">
         <motion.div 
-          id="poll-card-capture"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -130,12 +97,10 @@ const PollWidget = () => {
             </div>
             <button 
               onClick={handleShare}
-              disabled={isCapturing}
-              className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-tr from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full transition-all flex-shrink-0 shadow-md transform hover:scale-105 ${isCapturing ? 'opacity-50 cursor-wait' : ''}`}
-              title="Share to Instagram Story"
+              className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full transition-colors flex-shrink-0"
+              title="Share Poll"
             >
-              <FiInstagram className="w-5 h-5" />
-              <span className="text-sm font-bold hidden sm:inline">Story</span>
+              <FiShare2 className="w-5 h-5" />
             </button>
           </div>
 
