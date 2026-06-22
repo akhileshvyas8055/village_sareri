@@ -161,7 +161,7 @@ const Admin = () => {
       alert('News & Updates saved successfully!');
     } catch (error) {
       console.error('Error saving news:', error);
-      alert('Failed to save. Check your internet connection.');
+      alert('Failed to save to Firebase Database. Error: ' + error.message);
     }
   };
 
@@ -251,10 +251,16 @@ const Admin = () => {
         isActive: true,
         createdAt: new Date().toISOString()
       };
-      await set(ref(rtdb, 'adminData/poll'), poll);
-      alert("Poll Activated!");
-      setNewPollQuestion('');
-      setNewPollOptions(['', '']);
+      set(ref(rtdb, 'adminData/poll'), poll)
+        .then(() => {
+          alert("Poll Activated Successfully!");
+          setNewPollQuestion('');
+          setNewPollOptions(['', '']);
+        })
+        .catch(err => {
+          console.error("Firebase Error:", err);
+          alert("Failed to activate poll. Error: " + err.message);
+        });
     }
   };
 
