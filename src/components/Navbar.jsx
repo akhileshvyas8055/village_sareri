@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FiSun, FiMoon, FiMenu, FiX, FiShield } from 'react-icons/fi';
+import { FiMenu, FiX, FiShield, FiSettings } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import LanguageToggle from './LanguageToggle';
 import { useLanguage } from '../context/LanguageContext';
 
 const Navbar = ({ darkMode, toggleDarkMode }) => {
@@ -64,7 +63,6 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
           </ul>
           
           <div className="flex items-center gap-3">
-            <LanguageToggle />
             <Link 
               to="/admin"
               className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20 backdrop-blur-sm'}`}
@@ -72,31 +70,18 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
             >
               <FiShield className="w-5 h-5" />
             </Link>
-            <button 
-              onClick={toggleDarkMode} 
+            <Link 
+              to="/settings"
               className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20 backdrop-blur-sm'}`}
-              aria-label="Toggle Dark Mode"
+              title="Settings"
             >
-              {darkMode ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
-            </button>
+              <FiSettings className="w-5 h-5" />
+            </Link>
           </div>
         </nav>
 
         {/* Mobile Toggle */}
-        <div className="flex items-center gap-2 md:hidden">
-          <LanguageToggle />
-          <Link 
-            to="/admin"
-            className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20'}`}
-          >
-            <FiShield className="w-5 h-5" />
-          </Link>
-          <button 
-            onClick={toggleDarkMode} 
-            className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20'}`}
-          >
-            {darkMode ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
-          </button>
+        <div className="flex items-center gap-1 sm:gap-2 md:hidden">
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20'}`}
@@ -127,6 +112,26 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
                   </Link>
                 </li>
               ))}
+              
+              {/* Extra Mobile Actions */}
+              <li className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-around">
+                <Link 
+                  to="/settings"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-saffron"
+                >
+                  <FiSettings className="w-6 h-6" />
+                  <span className="text-xs font-medium">Settings</span>
+                </Link>
+                <Link 
+                  to="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-saffron"
+                >
+                  <FiShield className="w-6 h-6" />
+                  <span className="text-xs font-medium">Admin</span>
+                </Link>
+              </li>
             </ul>
           </motion.div>
         )}

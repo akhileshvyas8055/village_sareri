@@ -15,6 +15,28 @@ const MobileBottomNav = () => {
     { name: t('About'), path: '/about', icon: <FiInfo className="w-[18px] h-[18px]" /> }
   ];
 
+  const [isStandalone, setIsStandalone] = React.useState(false);
+
+  React.useEffect(() => {
+    // Check if the app is running in standalone mode (installed as PWA)
+    const checkStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      setIsStandalone(isStandaloneMode);
+    };
+
+    checkStandalone();
+    
+    // Optional: listen for changes (if they install it while keeping tab open)
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', checkStandalone);
+    return () => {
+      window.matchMedia('(display-mode: standalone)').removeEventListener('change', checkStandalone);
+    };
+  }, []);
+
+  if (!isStandalone) {
+    return null; // Don't render anything if it's a normal mobile browser
+  }
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-[#1A1A1A]/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 z-50 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
       <div className="flex justify-around items-center h-16 px-2">

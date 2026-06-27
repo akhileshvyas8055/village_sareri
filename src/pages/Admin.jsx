@@ -22,6 +22,7 @@ const Admin = () => {
   const [notifyTitle, setNotifyTitle] = useState('');
   const [notifyBody, setNotifyBody] = useState('');
   const [notifyType, setNotifyType] = useState('News Update');
+  const [isSending, setIsSending] = useState(false);
 
   // Poll State
   const [pollData, setPollData] = useState(null);
@@ -120,6 +121,7 @@ const Admin = () => {
   };
 
   const sendPushNotification = async (title, body, type = 'General') => {
+    setIsSending(true);
     try {
       // Store the notification in Firestore for history
       await addDoc(collection(db, 'notifications'), {
@@ -143,9 +145,11 @@ const Admin = () => {
       }
 
       console.log('Push notification triggered successfully:', result);
+      setIsSending(false);
       return true;
     } catch (error) {
       console.error('Error triggering push notification:', error);
+      setIsSending(false);
       return false;
     }
   };
@@ -208,6 +212,9 @@ const Admin = () => {
     else if (notifyType === 'Event Update') prefix = '🎉 Event Update: ';
     else if (notifyType === 'Festival Announcement') prefix = '🎆 Festival Announcement: ';
     else if (notifyType === 'Panchayat Notice') prefix = '📜 Panchayat Notice: ';
+    else if (notifyType === 'Announcement') prefix = '📣 Announcement: ';
+    else if (notifyType === 'Simple Message') prefix = '💬 Message: ';
+    else if (notifyType === 'News') prefix = '📰 News: ';
     else prefix = '📰 Village News: ';
 
     const fullTitle = `${prefix}${notifyTitle}`;
@@ -654,9 +661,10 @@ const Admin = () => {
                   <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
                     <button 
                       onClick={() => handleCirculateNews(item)}
-                      className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-bold transition-all transform hover:scale-105"
+                      disabled={isSending}
+                      className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-bold transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <FiBell className="w-4 h-4" /> Broadcast Notification
+                      <FiBell className="w-4 h-4" /> {isSending ? 'Sending...' : 'Broadcast Notification'}
                     </button>
                   </div>
                 </div>
@@ -820,6 +828,9 @@ const Admin = () => {
                     onChange={(e) => setNotifyType(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 text-gray-800 font-medium"
                   >
+                    <option value="Simple Message">💬 Simple Message</option>
+                    <option value="Announcement">📣 Announcement</option>
+                    <option value="News">📰 News</option>
                     <option value="News Update">📰 News Update</option>
                     <option value="Event Update">🎉 Event Update</option>
                     <option value="Festival Announcement">🎆 Festival Announcement</option>
@@ -858,10 +869,11 @@ const Admin = () => {
                 <div className="pt-4 border-t border-gray-100">
                   <button 
                     type="submit"
-                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/30 transform hover:-translate-y-0.5"
+                    disabled={isSending}
+                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/30 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiSend className="w-5 h-5" />
-                    Broadcast Notification Now
+                    {isSending ? 'Sending Notification...' : 'Broadcast Notification Now'}
                   </button>
                   <p className="text-xs text-center text-gray-400 mt-4">
                     Notifications are dispatched via Firebase Cloud Messaging to all subscribed phones and computers.
