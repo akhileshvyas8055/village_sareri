@@ -91,15 +91,15 @@ const VirtualTourBanner = () => {
                 <div className="w-10 h-10 border-4 border-saffron border-t-transparent rounded-full animate-spin"></div>
               </div>
               <iframe 
-                src="https://maps.google.com/maps?q=Brahmano%20Ki%20Sareri,%20Bhilwara,%20Rajasthan&layer=c&cbll=25.777,74.453&output=svembed" 
+                src="https://www.google.com/maps/embed?pb=!4v1782549017971!6m8!1m7!1s01dyTSu2-GDgGXvcXlWP6w!2m2!1d25.62278654251179!2d74.44466942732011!3f90!4f0!5f0.7820865974627469" 
                 width="100%" 
                 height="100%" 
                 style={{ border: 0 }} 
                 allowFullScreen="" 
                 loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
+                referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full relative z-10"
-                title="Sareri Village Street View"
+                title="Sareri Village 360° Street View"
               ></iframe>
             </div>
           </div>
