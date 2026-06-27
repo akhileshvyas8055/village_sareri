@@ -1,17 +1,18 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiUsers, FiImage, FiMessageSquare, FiInfo } from 'react-icons/fi';
+import { FiHome, FiUsers, FiImage, FiBell, FiEdit3, FiInfo } from 'react-icons/fi';
 import { useLanguage } from '../context/LanguageContext';
 
 const MobileBottomNav = () => {
   const { t } = useLanguage();
 
   const navItems = [
-    { name: t('Home'), path: '/', icon: <FiHome className="w-5 h-5" /> },
-    { name: t('Panchayat'), path: '/panchayat', icon: <FiUsers className="w-5 h-5" /> },
-    { name: t('Gallery'), path: '/gallery', icon: <FiImage className="w-5 h-5" /> },
-    { name: t('News'), path: '/news', icon: <FiMessageSquare className="w-5 h-5" /> },
-    { name: t('About'), path: '/about', icon: <FiInfo className="w-5 h-5" /> }
+    { name: t('Home'), path: '/', icon: <FiHome className="w-[18px] h-[18px]" /> },
+    { name: t('Panchayat'), path: '/panchayat', icon: <FiUsers className="w-[18px] h-[18px]" /> },
+    { name: t('Gallery'), path: '/gallery', icon: <FiImage className="w-[18px] h-[18px]" /> },
+    { name: t('News'), path: '/news', icon: <FiBell className="w-[18px] h-[18px]" /> },
+    { name: t('Complaint'), path: '/news', icon: <FiEdit3 className="w-[18px] h-[18px]" /> },
+    { name: t('About'), path: '/about', icon: <FiInfo className="w-[18px] h-[18px]" /> }
   ];
 
   return (
