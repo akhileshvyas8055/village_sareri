@@ -123,15 +123,8 @@ const Admin = () => {
   const sendPushNotification = async (title, body, type = 'General') => {
     setIsSending(true);
     try {
-      // Store the notification in Firestore for history
-      await addDoc(collection(db, 'notifications'), {
-        title,
-        body,
-        type,
-        timestamp: new Date().toISOString()
-      });
-
       // Call the completely free Vercel Serverless Function to broadcast the push!
+      // The API will also store the notification in Firestore for history.
       const response = await fetch('/api/send-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

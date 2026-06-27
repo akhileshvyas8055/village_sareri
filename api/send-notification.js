@@ -25,13 +25,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { title, body } = req.body;
+    const { title, body, type } = req.body;
     
     if (!title || !body) {
       return res.status(400).json({ success: false, message: 'Missing title or body' });
     }
 
     const db = admin.firestore();
+    
+    // Store the notification in Firestore for history
+    try {
+      await db.collection('notifications').add({
+        title,
+        body,
+        type: type || 'General',
+        timestamp: new Date().toISOString()
+      });
+    } catch (dbErr) {
+      console.warn('Failed to store notification history:', dbErr);
+      // Continue anyway, sending push is more important
+    }
     
     // Fetch all user tokens from Firestore
     const tokensSnapshot = await db.collection('fcmTokens').get();
