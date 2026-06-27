@@ -15,11 +15,10 @@ const Home = () => {
         <WeatherCard />
       </div>
 
-      <VirtualTourBanner />
-
       <KhelBanner />
       <PollWidget />
       <Highlights />
+      <VirtualTourBanner />
     </div>
   );
 };
