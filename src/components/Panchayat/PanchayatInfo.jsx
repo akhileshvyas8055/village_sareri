@@ -12,7 +12,7 @@ const PanchayatInfo = ({ info, sachiv }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
           <div>
             <p className="text-sm text-green-200 uppercase font-semibold">पंचायत / Panchayat</p>
-            <p className="font-bold text-lg">{info?.panchayatName || 'Jankari uplabdh nahi'}</p>
+            <p className="font-bold text-lg notranslate">{info?.panchayatName || 'Jankari uplabdh nahi'}</p>
           </div>
           <div>
             <p className="text-sm text-green-200 uppercase font-semibold">ब्लॉक / Block</p>

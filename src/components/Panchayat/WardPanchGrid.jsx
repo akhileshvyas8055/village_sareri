@@ -32,7 +32,7 @@ const WardPanchGrid = ({ wardPanches }) => {
                 <div className="space-y-2 mt-auto">
                   <div className="flex items-start gap-2 text-sm">
                     <span className="text-gray-400">📍</span>
-                    <span className="text-gray-700">{panch.address || 'Address N/A'}</span>
+                    <span className="text-gray-700 notranslate">{panch.address || 'Address N/A'}</span>
                   </div>
                   <div className="flex items-start gap-2 text-sm">
                     <span className="text-gray-400">📞</span>

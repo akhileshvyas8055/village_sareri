@@ -41,7 +41,7 @@ const SarpanchCard = ({ sarpanch }) => {
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
               <p className="text-xs text-gray-500 uppercase font-bold">पता / Address</p>
-              <p className="font-semibold text-gray-900">{sarpanch.address || 'N/A'}</p>
+              <p className="font-semibold text-gray-900 notranslate">{sarpanch.address || 'N/A'}</p>
             </div>
           </div>
           
