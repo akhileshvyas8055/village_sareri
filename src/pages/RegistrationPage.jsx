@@ -59,7 +59,7 @@ const RegistrationPage = () => {
 
       <div className="container mx-auto px-4 max-w-4xl relative z-10">
         <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-saffron mb-4 tracking-wider drop-shadow-[0_4px_12px_rgba(249,115,22,0.5)] leading-normal py-2" style={{ fontFamily: '"Yatra One", cursive' }}>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-saffron mb-4 tracking-wider drop-shadow-[0_4px_12px_rgba(249,115,22,0.5)] leading-normal py-2 notranslate" style={{ fontFamily: '"Yatra One", cursive' }}>
             सरेरी श्याम खेल महोत्सव 2026
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto font-medium px-2">
@@ -77,7 +77,7 @@ const RegistrationPage = () => {
                   <FiCheckCircle className="w-12 h-12 text-green-400" />
                 </div>
                 <h3 className="text-3xl font-extrabold text-white tracking-wide uppercase">Registration Confirmed! / पंजीकरण सफल!</h3>
-                <p className="text-gray-400 text-lg">You're officially part of the Khel Maha Utsav.<br/>आप आधिकारिक तौर पर खेल महा उत्सव का हिस्सा हैं।</p>
+                <p className="text-gray-400 text-lg">You're officially part of the <span className="notranslate">Khel Maha Utsav</span>.<br/>आप आधिकारिक तौर पर <span className="notranslate">खेल महा उत्सव</span> का हिस्सा हैं।</p>
                 <button 
                   onClick={() => setIsSubmitted(false)}
                   className="mt-6 bg-gradient-to-r from-orange-600 to-saffron hover:from-orange-500 hover:to-orange-400 text-white font-bold py-3 px-8 rounded-full uppercase tracking-wider transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(249,115,22,0.4)]"

@@ -47,7 +47,7 @@ const Footer = () => {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="font-heading font-bold text-2xl text-white tracking-wide leading-none">
+                <span className="font-heading font-bold text-2xl text-white tracking-wide leading-none notranslate">
                   Sareri
                 </span>
                 <span className="text-saffron font-medium tracking-widest uppercase text-xs mt-1">

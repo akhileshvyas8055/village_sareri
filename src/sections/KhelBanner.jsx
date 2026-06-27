@@ -3,7 +3,7 @@ import { FiArrowRight } from 'react-icons/fi';
 
 const KhelBanner = () => {
   return (
-    <section className="py-12 bg-white dark:bg-darkCard relative overflow-hidden">
+    <section className="py-12 bg-white dark:bg-darkCard relative overflow-hidden notranslate">
       <div className="container mx-auto px-4 md:px-8">
         <div className="relative rounded-3xl overflow-hidden shadow-2xl">
           {/* Background Image / Gradient */}

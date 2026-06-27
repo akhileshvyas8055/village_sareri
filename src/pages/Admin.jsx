@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, onValue, set, remove, push, get } from 'firebase/database';
-import { db, rtdb } from '../firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db, rtdb } from '../firebase';
 import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
 
 const Admin = () => {
@@ -80,28 +81,12 @@ const Admin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const snap = await get(ref(rtdb, 'adminCredentials'));
-      let valid = false;
-      if (snap.exists()) {
-        const creds = snap.val();
-        if (creds.username === username && creds.password === password) {
-          valid = true;
-        }
-      } else {
-        // Fallback to hardcoded/prompt credentials if DB node is missing
-        if (password === 'villagesareri56@' || (username === 'admin' && password === 'sareri@2024')) {
-          valid = true;
-        }
-      }
-      
-      if (valid) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('sareriAdminAuth', 'true');
-      } else {
-        alert('Wrong Username or Password!');
-      }
+      await signInWithEmailAndPassword(auth, username, password);
+      setIsAuthenticated(true);
+      sessionStorage.setItem('sareriAdminAuth', 'true');
     } catch (err) {
-      alert('Error verifying login: ' + err.message);
+      console.error(err);
+      alert('Wrong Username or Password! (or account does not exist)');
     }
   };
 
@@ -174,11 +159,16 @@ const Admin = () => {
       });
       await set(ref(rtdb, 'adminData/news'), updates);
       
-      // Auto-trigger push notification for the latest news
       if (news.length > 0) {
         const latest = news[0];
-        await handleCirculateNews(latest, true);
+        // Confirm before sending to prevent accidental spam when just editing a typo
+        if (window.confirm(`क्या आप लेटेस्ट न्यूज़ "${latest.title}" का Auto Push Notification सभी को भेजना चाहते हैं?`)) {
+          await handleCirculateNews(latest, true);
+          alert('News saved and notification sent successfully!');
+          return;
+        }
       }
+      
       alert('News & Updates saved successfully!');
     } catch (error) {
       console.error('Error saving news:', error);

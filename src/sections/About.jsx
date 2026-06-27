@@ -41,7 +41,7 @@ const About = () => {
             transition={{ duration: 0.8 }}
             className="space-y-6 order-2 lg:order-1"
           >
-            <h3 className="text-3xl font-heading font-semibold text-gray-800 dark:text-gray-100">
+            <h3 className="text-3xl font-heading font-semibold text-gray-800 dark:text-gray-100 notranslate">
               Brahmano Ki Sareri
             </h3>
             <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">

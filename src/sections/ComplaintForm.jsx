@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FiCamera, FiUpload, FiMic, FiCalendar, FiCheckCircle, FiClock } from 'react-icons/fi';
-import { ref, push, set, onValue } from 'firebase/database';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiCamera, FiUpload, FiMic, FiCalendar, FiCheckCircle, FiClock, FiSearch, FiFileText } from 'react-icons/fi';
+import { ref, push, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { rtdb } from '../firebase';
 
 const ComplaintForm = () => {
-  const [allComplaints, setAllComplaints] = useState([]);
+  const [activeTab, setActiveTab] = useState('register'); // 'register' or 'track'
   
-  const [myComplaintIds, setMyComplaintIds] = useState(() => {
-    const saved = localStorage.getItem('sareri_myComplaints');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   const [complaint, setComplaint] = useState({ name: '', contact: '', details: '', photo: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [successTrackingId, setSuccessTrackingId] = useState('');
+
+  const [trackIdInput, setTrackIdInput] = useState('');
+  const [trackedComplaint, setTrackedComplaint] = useState(null);
+  const [isTracking, setIsTracking] = useState(false);
+  const [trackError, setTrackError] = useState('');
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -63,11 +64,14 @@ const ComplaintForm = () => {
   const submitComplaint = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSuccessTrackingId('');
     try {
+      const trackingId = 'CMP-' + Math.floor(100000 + Math.random() * 900000);
       const newComplaint = {
         date: new Date().toLocaleDateString(),
         timestamp: Date.now(),
         status: 'Pending',
+        trackingId,
         ...complaint
       };
       
@@ -75,11 +79,7 @@ const ComplaintForm = () => {
       const newComplaintRef = push(complaintsRef);
       await set(newComplaintRef, { id: newComplaintRef.key, ...newComplaint });
       
-      const newIds = [newComplaintRef.key, ...myComplaintIds];
-      setMyComplaintIds(newIds);
-      localStorage.setItem('sareri_myComplaints', JSON.stringify(newIds));
-      
-      alert("Complaint registered successfully! It will be reviewed by the administration.");
+      setSuccessTrackingId(trackingId);
       setComplaint({ name: '', contact: '', details: '', photo: null });
     } catch (error) {
       console.error('Error submitting complaint:', error);
@@ -88,53 +88,117 @@ const ComplaintForm = () => {
     setIsSubmitting(false);
   };
 
-  useEffect(() => {
-    const complaintsRef = ref(rtdb, 'adminData/complaints');
-    const unsubComplaints = onValue(complaintsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const complaintsArray = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
-        setAllComplaints(complaintsArray);
+  const handleTrack = async (e) => {
+    e.preventDefault();
+    if (!trackIdInput.trim()) return;
+    
+    setIsTracking(true);
+    setTrackError('');
+    setTrackedComplaint(null);
+    
+    try {
+      const searchId = trackIdInput.trim().toUpperCase();
+      const complaintsRef = ref(rtdb, 'adminData/complaints');
+      const q = query(complaintsRef, orderByChild('trackingId'), equalTo(searchId));
+      
+      const snapshot = await get(q);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Since trackingId should be unique, we just take the first match
+        const complaintData = Object.values(data)[0];
+        setTrackedComplaint(complaintData);
       } else {
-        setAllComplaints([]);
+        setTrackError('No complaint found with this Tracking ID. Please check and try again.');
       }
-    });
-
-    return () => unsubComplaints();
-  }, []);
-
-  const myComplaintsList = allComplaints.filter(c => myComplaintIds.includes(c.id));
+    } catch (error) {
+      console.error('Error tracking complaint:', error);
+      setTrackError('Something went wrong. Please try again.');
+    }
+    setIsTracking(false);
+  };
 
   return (
     <section className="py-24 bg-white dark:bg-darkCard transition-colors min-h-screen">
       <div className="container mx-auto px-4 md:px-8 max-w-4xl">
         
-        {/* Register Complaint Form */}
-        <div className="mb-16">
-          <div className="mb-10 text-center md:text-left">
-            <motion.h2 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl font-bold font-heading text-gray-900 dark:text-white mb-4"
-            >
-              Register <span className="text-red-600">Complaint</span> / शिकायत <span className="text-red-600">दर्ज करें</span>
-            </motion.h2>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-16 h-1 bg-red-600 rounded-full mx-auto md:mx-0"
-            />
-            <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed">
-              Submit any issues, suggestions or complaints directly to the village administration.<br />
-              अपनी समस्या, सुझाव या शिकायत सीधे ग्राम पंचायत तक पहुंचाएं।
-            </p>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+        <div className="mb-10 text-center md:text-left">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-darkCard p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800"
+            className="text-4xl font-bold font-heading text-gray-900 dark:text-white mb-4"
           >
+            Panchayat <span className="text-red-600">Complaint Portal</span>
+          </motion.h2>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-16 h-1 bg-red-600 rounded-full mx-auto md:mx-0"
+          />
+          <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed">
+            Submit any issues or suggestions directly to the village administration, and track their status in real-time.<br />
+            अपनी समस्या या सुझाव सीधे ग्राम पंचायत तक पहुंचाएं, और उसका स्टेटस चेक करें।
+          </p>
+        </div>
+
+        {/* Custom Tabs */}
+        <div className="flex gap-4 mb-8 justify-center md:justify-start">
+          <button 
+            onClick={() => setActiveTab('register')}
+            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+              activeTab === 'register' 
+                ? 'bg-red-600 text-white shadow-lg shadow-red-600/30' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+            }`}
+          >
+            <FiFileText className="inline-block mr-2" /> Register Complaint
+          </button>
+          <button 
+            onClick={() => setActiveTab('track')}
+            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+              activeTab === 'track' 
+                ? 'bg-saffron text-white shadow-lg shadow-saffron/30' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+            }`}
+          >
+            <FiSearch className="inline-block mr-2" /> Track Status
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {activeTab === 'register' && (
+            <motion.div
+              key="register"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-white dark:bg-darkCard p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800"
+            >
+              {successTrackingId ? (
+                <div className="text-center py-10">
+                  <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FiCheckCircle className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Complaint Registered!</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">Your complaint has been successfully submitted to the Panchayat.</p>
+                  
+                  <div className="bg-gray-50 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 rounded-2xl max-w-sm mx-auto mb-8">
+                    <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Your Tracking ID</p>
+                    <p className="text-3xl font-bold text-saffron tracking-wider">{successTrackingId}</p>
+                    <p className="text-xs text-red-500 mt-3 font-medium">⚠️ Please save this ID to track your complaint status.</p>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      setSuccessTrackingId('');
+                      setActiveTab('track');
+                      setTrackIdInput(successTrackingId);
+                    }}
+                    className="bg-saffron hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl transition-colors"
+                  >
+                    Track Status Now
+                  </button>
+                </div>
+              ) : (
             <form onSubmit={submitComplaint} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name / पूरा नाम</label>
@@ -223,56 +287,95 @@ const ComplaintForm = () => {
                 {isSubmitting ? 'Submitting... / भेजा जा रहा है...' : 'Submit Complaint / शिकायत दर्ज करें'}
               </button>
             </form>
-          </motion.div>
-        </div>
+              )}
+            </motion.div>
+          )}
 
-        {/* My Complaints Section */}
-        {myComplaintsList.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="pt-6 border-t-2 border-gray-100 dark:border-gray-800"
-          >
-            <div className="mb-8 text-center md:text-left">
-              <h2 className="text-3xl font-bold font-heading text-gray-900 dark:text-white mb-2">
-                My <span className="text-blue-600">Complaints</span> / मेरी <span className="text-blue-600">शिकायतें</span>
-              </h2>
-              <div className="w-16 h-1 bg-blue-600 rounded-full mx-auto md:mx-0" />
-            </div>
-
-            <div className="space-y-4">
-              {myComplaintsList.map((item) => (
-                <div key={item.id} className="bg-white dark:bg-darkCard p-5 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${item.status === 'Resolved' ? 'bg-green-500' : 'bg-orange-500'}`} />
-                  
-                  <div className="pl-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                        <FiCalendar className="w-4 h-4" /> {item.date}
-                      </span>
-                      <span className={`px-3 py-1 text-xs font-bold uppercase rounded-full flex items-center gap-1 ${
-                        item.status === 'Resolved' 
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      }`}>
-                        {item.status === 'Resolved' ? <FiCheckCircle /> : <FiClock />}
-                        {item.status || 'Pending'}
-                      </span>
-                    </div>
-                    <p className="text-gray-800 dark:text-gray-200 font-medium line-clamp-2 mt-2">{item.details}</p>
-                    
-                    {item.adminReply && (
-                      <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border-l-4 border-blue-500">
-                        <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mb-1">Admin Reply:</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">{item.adminReply}</p>
-                      </div>
-                    )}
+          {activeTab === 'track' && (
+            <motion.div
+              key="track"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-white dark:bg-darkCard p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800"
+            >
+              <div className="max-w-xl mx-auto">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Track Your Complaint</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-center mb-8 text-sm">Enter the Tracking ID provided to you when you registered the complaint.</p>
+                
+                <form onSubmit={handleTrack} className="mb-10">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                      type="text" 
+                      value={trackIdInput}
+                      onChange={(e) => setTrackIdInput(e.target.value.toUpperCase())}
+                      placeholder="e.g. CMP-123456"
+                      className="flex-1 px-5 py-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron text-lg font-bold tracking-widest text-center sm:text-left text-gray-900 dark:text-white uppercase"
+                      required
+                    />
+                    <button 
+                      type="submit"
+                      disabled={isTracking}
+                      className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-saffron dark:hover:bg-saffron px-8 py-4 rounded-xl font-bold transition-colors disabled:opacity-70 whitespace-nowrap"
+                    >
+                      {isTracking ? 'Searching...' : 'Track Status'}
+                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+                  {trackError && <p className="text-red-500 text-sm mt-3 text-center sm:text-left font-medium">{trackError}</p>}
+                </form>
+
+                {trackedComplaint && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+                  >
+                    <div className={`absolute left-0 top-0 bottom-0 w-2 ${
+                      trackedComplaint.status === 'Resolved' ? 'bg-green-500' : 
+                      trackedComplaint.status === 'Rejected' ? 'bg-red-500' :
+                      trackedComplaint.status === 'In Progress' ? 'bg-blue-500' : 'bg-orange-500'
+                    }`} />
+                    
+                    <div className="pl-4">
+                      <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
+                        <div>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tracking ID</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{trackedComplaint.trackingId}</p>
+                        </div>
+                        <span className={`px-4 py-1.5 text-sm font-bold uppercase rounded-full flex items-center gap-1.5 ${
+                          trackedComplaint.status === 'Resolved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                          trackedComplaint.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                          trackedComplaint.status === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                          'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                        }`}>
+                          {trackedComplaint.status === 'Resolved' ? <FiCheckCircle /> : <FiClock />}
+                          {trackedComplaint.status || 'Pending'}
+                        </span>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Date Submitted</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{trackedComplaint.date}</p>
+                      </div>
+
+                      <div className="mb-4">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Complaint Details</p>
+                        <p className="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap">{trackedComplaint.details}</p>
+                      </div>
+                      
+                      {trackedComplaint.adminReply && (
+                        <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-xl border-l-4 border-indigo-500 shadow-sm">
+                          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mb-2">Reply from Panchayat:</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{trackedComplaint.adminReply}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </section>

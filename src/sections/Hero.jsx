@@ -34,7 +34,7 @@ const Hero = () => {
           className="text-5xl md:text-7xl lg:text-8xl font-bold font-heading text-white mb-6 drop-shadow-2xl"
         >
           Welcome to <br className="md:hidden" />
-          <span className="text-saffron">Village Sareri</span>
+          <span className="text-saffron notranslate">Village Sareri</span>
         </motion.h1>
         
         <motion.p 
