@@ -49,7 +49,7 @@ const PanchayatPage = () => {
             ग्राम पंचायत कार्यालय
           </h1>
           <p className="text-xl text-[#1A5C2A] font-semibold">
-            Gram Panchayat Office - Brahmano Ki Sareri
+            Gram Panchayat Office - <span className="notranslate">Brahmano Ki Sareri</span>
           </p>
           <div className="w-24 h-1 bg-[#1A5C2A] mx-auto mt-6 rounded-full"></div>
         </div>

@@ -23,7 +23,7 @@ const About = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-bold font-heading text-gray-900 dark:text-white mb-4"
           >
-            About <span className="text-saffron">Sareri</span>
+            About <span className="text-saffron notranslate">Brahmano Ki Sareri</span>
           </motion.h2>
           <motion.div 
             initial={{ opacity: 0, scale: 0 }}

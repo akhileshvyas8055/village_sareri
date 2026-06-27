@@ -26,7 +26,7 @@ const CommunityPages = () => {
       title: 'Bheru Kheda BK',
       handle: '@bheru_kheda_bk_sareri',
       url: 'https://www.instagram.com/bheru_kheda_bk_sareri?igsh=MWllaGtoN3Z0YWhlMw==',
-      desc: 'Latest updates, traditions, and cultural highlights from Bheru Kheda, Brahmano Ki Sareri.',
+      desc: 'Latest updates, traditions, and cultural highlights from Bheru Kheda, <span className="notranslate">Brahmano Ki Sareri</span>.',
       color: 'from-emerald-400 to-teal-600',
       image: '' // Add your photo path here, e.g., '/photos/bheru.jpg'
     },

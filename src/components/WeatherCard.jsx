@@ -41,7 +41,7 @@ const WeatherCard = () => {
       <div className="flex flex-col items-start text-left">
         <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold tracking-wider uppercase text-[10px] sm:text-xs mb-1.5">
           <FiMapPin className="w-3.5 h-3.5" />
-          <span>Brahmano Ki Sareri</span>
+          <span className="notranslate">Brahmano Ki Sareri</span>
         </div>
         <h3 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white flex items-start leading-none">
           {Math.round(weather.temperature)}<span className="text-lg sm:text-xl mt-0.5 text-gray-500 dark:text-gray-400">°C</span>

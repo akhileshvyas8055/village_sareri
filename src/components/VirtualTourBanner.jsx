@@ -47,7 +47,7 @@ const VirtualTourBanner = () => {
               <span className="text-3xl md:text-4xl lg:text-5xl font-light text-gray-200 mt-2 block">Virtual Tour</span>
             </h2>
             <p className="text-lg md:text-xl font-medium text-gray-300 border-l-4 border-saffron pl-5 py-2 bg-gradient-to-r from-black/20 to-transparent rounded-r-lg">
-              Brahmano Ki Sareri ki sadkon ka <span className="font-bold text-white">live 360° nazar</span> se darshan karo, bilkul real-time experience!
+              <span className="notranslate">Brahmano Ki Sareri</span> ki sadkon ka <span className="font-bold text-white">live 360° nazar</span> se darshan karo, bilkul real-time experience!
             </p>
           </div>
           
@@ -72,10 +72,10 @@ const VirtualTourBanner = () => {
             
             {/* Modal Header */}
             <div className="flex justify-between items-center p-4 bg-gradient-to-r from-[#1A5C2A] to-green-800 text-white shadow-md z-10">
-              <h3 className="font-heading font-bold text-lg sm:text-xl flex items-center gap-2">
-                <FiMap className="text-saffron" /> 
-                <span className="truncate">Brahmano Ki Sareri - 360° Street View</span>
-              </h3>
+              <div className="flex items-center gap-3">
+                <FiMap className="w-5 h-5 text-saffron animate-pulse" />
+                <span className="truncate notranslate">Brahmano Ki Sareri - 360° Street View</span>
+              </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsModalOpen(false); }}
                 className="p-2 hover:bg-red-500 rounded-full transition-colors flex-shrink-0"

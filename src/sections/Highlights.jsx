@@ -113,7 +113,7 @@ const Highlights = () => {
             transition={{ delay: 0.2 }}
             className="mt-6 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg"
           >
-            Discover the key pillars that make Brahmano Ki Sareri a self-sustaining, vibrant, and beautiful community.
+            Discover the key pillars that make <span className="notranslate">Brahmano Ki Sareri</span> a self-sustaining, vibrant, and beautiful community.
           </motion.p>
         </div>
 
