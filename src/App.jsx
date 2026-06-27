@@ -9,6 +9,7 @@ import CommunityPage from './pages/CommunityPage';
 import NewsPage from './pages/NewsPage';
 import RegistrationPage from './pages/RegistrationPage';
 import NotificationPopup from './components/NotificationPopup';
+import PanchayatPage from './pages/Panchayat';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -54,6 +55,7 @@ function App() {
                   <Route path="/community" element={<CommunityPage />} />
                   <Route path="/news" element={<NewsPage />} />
                   <Route path="/khel-registration" element={<RegistrationPage />} />
+                  <Route path="/panchayat" element={<PanchayatPage />} />
                 </Routes>
               </main>
               <Footer />

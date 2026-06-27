@@ -118,6 +118,9 @@ const Footer = () => {
               Terms of Service
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-saffron group-hover:w-full transition-all duration-300"></span>
             </a>
+            <Link to="/admin" className="text-gray-800 hover:text-gray-600 transition-colors">
+              Admin
+            </Link>
           </div>
         </div>
       </div>

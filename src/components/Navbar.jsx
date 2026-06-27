@@ -13,6 +13,7 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
 
   const navLinks = [
     { name: 'Home', href: '/' },
+    { name: 'Panchayat', href: '/panchayat' },
     { name: 'About', href: '/about' },
     { name: 'Gallery', href: '/gallery' },
     { name: 'Community', href: '/community' },

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
 import { collection, addDoc } from 'firebase/firestore';
-import { ref, onValue, set, remove, push } from 'firebase/database';
+import { ref, onValue, set, remove, push, get } from 'firebase/database';
 import { db, rtdb } from '../firebase';
+import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
@@ -15,6 +17,7 @@ const Admin = () => {
   const [complaints, setComplaints] = useState([]);
   const [khelRegistrations, setKhelRegistrations] = useState([]);
   const [activeTab, setActiveTab] = useState('news');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifyTitle, setNotifyTitle] = useState('');
   const [notifyBody, setNotifyBody] = useState('');
   const [notifyType, setNotifyType] = useState('News Update');
@@ -74,13 +77,31 @@ const Admin = () => {
     };
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (password === 'villagesareri56@') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('sareriAdminAuth', 'true');
-    } else {
-      alert('Wrong Password!');
+    try {
+      const snap = await get(ref(rtdb, 'adminCredentials'));
+      let valid = false;
+      if (snap.exists()) {
+        const creds = snap.val();
+        if (creds.username === username && creds.password === password) {
+          valid = true;
+        }
+      } else {
+        // Fallback to hardcoded/prompt credentials if DB node is missing
+        if (password === 'villagesareri56@' || (username === 'admin' && password === 'sareri@2024')) {
+          valid = true;
+        }
+      }
+      
+      if (valid) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem('sareriAdminAuth', 'true');
+      } else {
+        alert('Wrong Username or Password!');
+      }
+    } catch (err) {
+      alert('Error verifying login: ' + err.message);
     }
   };
 
@@ -389,6 +410,15 @@ const Admin = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 text-gray-900">
         <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
           <h2 className="text-2xl font-bold text-center mb-6">Admin Panel</h2>
+          <div className="mb-4">
+            <input 
+              type="text" 
+              placeholder="Enter Username" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-saffron"
+            />
+          </div>
           <div className="relative mb-4">
             <input 
               type={showPassword ? "text" : "password"} 
@@ -418,66 +448,143 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 text-gray-900">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden font-sans">
+      {/* Sidebar (Desktop) */}
+      <aside className="w-64 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-col z-20 hidden md:flex border-r border-gray-100 relative">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0">
+          <Link to="/" className="flex items-center gap-3">
+            <img src="/photos/About.jpeg" alt="Logo" className="w-10 h-10 rounded-full object-cover border-2 border-saffron shadow-sm" />
+            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Admin<span className="text-saffron">Panel</span></h1>
+          </Link>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-2 px-2">Main Menu</p>
+          <button onClick={() => setActiveTab('news')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'news' ? 'bg-orange-50 text-saffron shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiFileText className={`w-5 h-5 ${activeTab === 'news' ? 'text-saffron' : 'text-gray-400'}`} /> Manage News
+          </button>
+          <button onClick={() => setActiveTab('panchayat')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'panchayat' ? 'bg-green-50 text-green-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiUsers className={`w-5 h-5 ${activeTab === 'panchayat' ? 'text-green-700' : 'text-gray-400'}`} /> Panchayat Info
+          </button>
+          
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6 px-2">User Data</p>
+          <button onClick={() => setActiveTab('complaints')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'complaints' ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <div className="flex items-center gap-3">
+              <FiMessageSquare className={`w-5 h-5 ${activeTab === 'complaints' ? 'text-red-600' : 'text-gray-400'}`} /> Complaints
+            </div>
+            {complaints.length > 0 && <span className="bg-red-100 text-red-600 text-[10px] py-1 px-2 rounded-full font-bold">{complaints.length}</span>}
+          </button>
+          <button onClick={() => setActiveTab('khel')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'khel' ? 'bg-orange-50 text-orange-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <div className="flex items-center gap-3">
+              <FiActivity className={`w-5 h-5 ${activeTab === 'khel' ? 'text-orange-600' : 'text-gray-400'}`} /> Khel Registrations
+            </div>
+            {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
+          </button>
+
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6 px-2">Engagement</p>
+          <button onClick={() => setActiveTab('notifications')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiBell className={`w-5 h-5 ${activeTab === 'notifications' ? 'text-indigo-600' : 'text-gray-400'}`} /> Push Notifications
+          </button>
+          <button onClick={() => setActiveTab('poll')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiPieChart className={`w-5 h-5 ${activeTab === 'poll' ? 'text-purple-600' : 'text-gray-400'}`} /> Manage Poll
+          </button>
+        </nav>
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+          <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-gray-600 hover:text-white hover:bg-red-500 w-full py-2.5 rounded-lg transition-all font-bold text-sm shadow-sm border border-gray-200 hover:border-red-500">
+            <FiLogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC]">
+        
+        {/* Mobile Header */}
+        <header className="bg-white shadow-sm z-10 p-4 flex justify-between items-center md:hidden border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+              <FiMenu className="w-6 h-6" />
+            </button>
+            <h1 className="text-lg font-bold text-gray-800">Admin<span className="text-saffron">Panel</span></h1>
+          </div>
+          {activeTab === 'news' && (
+            <button onClick={handleSave} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold transition-colors text-xs shadow-sm">
+              <FiSave /> Save
+            </button>
+          )}
+        </header>
+
+        {/* Desktop Header */}
+        <header className="bg-white shadow-sm z-10 px-8 py-5 hidden md:flex justify-between items-center border-b border-gray-100">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Manage Updates</h1>
-            <p className="text-sm text-gray-500">Add, edit or delete village news.</p>
+            <h2 className="text-2xl font-bold text-gray-800 capitalize tracking-tight">
+              {activeTab === 'khel' ? 'Khel Registrations' : activeTab === 'panchayat' ? 'Gram Panchayat' : activeTab} Management
+            </h2>
+            <p className="text-sm text-gray-500 mt-1 font-medium">Manage and update village information seamlessly.</p>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={handleSave} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-              <FiSave /> Save Changes
-            </button>
-            <button onClick={handleLogout} className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-              <FiLogOut /> Logout
-            </button>
+            {activeTab === 'news' && (
+              <button onClick={handleSave} className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-green-500/30 transform hover:-translate-y-0.5">
+                <FiSave className="w-5 h-5" /> Save Changes
+              </button>
+            )}
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 mt-8 max-w-5xl">
-        {/* Tabs */}
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-4 mb-8 border-b border-gray-200">
-          <button 
-            onClick={() => setActiveTab('news')}
-            className={`px-6 py-3 font-semibold transition-colors border-b-2 ${activeTab === 'news' ? 'border-saffron text-saffron' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Manage News
-          </button>
-          <button 
-            onClick={() => setActiveTab('complaints')}
-            className={`px-6 py-3 font-semibold transition-colors border-b-2 ${activeTab === 'complaints' ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            User Complaints
-            {complaints.length > 0 && (
-              <span className="ml-2 bg-red-100 text-red-600 text-xs py-1 px-2 rounded-full">{complaints.length}</span>
-            )}
-          </button>
-          <button 
-            onClick={() => setActiveTab('khel')}
-            className={`px-6 py-3 font-semibold transition-colors border-b-2 ${activeTab === 'khel' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Khel Registrations
-            {khelRegistrations.length > 0 && (
-              <span className="ml-2 bg-orange-100 text-orange-600 text-xs py-1 px-2 rounded-full">{khelRegistrations.length}</span>
-            )}
-          </button>
-          <button 
-            onClick={() => setActiveTab('notifications')}
-            className={`px-6 py-3 font-semibold transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'notifications' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            <FiBell className="w-4 h-4" /> Push Notifications
-          </button>
-          <button 
-            onClick={() => setActiveTab('poll')}
-            className={`px-6 py-3 font-semibold transition-colors border-b-2 ${activeTab === 'poll' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Manage Poll
-          </button>
-        </div>
+        {/* Mobile Sidebar Overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+            <aside className="w-72 bg-white h-full flex flex-col relative z-50 shadow-2xl transform transition-transform">
+              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                <div className="flex items-center gap-3">
+                  <img src="/photos/About.jpeg" alt="Logo" className="w-8 h-8 rounded-full border border-saffron" />
+                  <h1 className="text-lg font-bold text-gray-800">Menu</h1>
+                </div>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+                <button onClick={() => {setActiveTab('news'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'news' ? 'bg-orange-50 text-saffron' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiFileText className="w-5 h-5" /> Manage News
+                </button>
+                <button onClick={() => {setActiveTab('panchayat'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'panchayat' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiUsers className="w-5 h-5" /> Panchayat Info
+                </button>
+                <button onClick={() => {setActiveTab('complaints'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'complaints' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <div className="flex items-center gap-3"><FiMessageSquare className="w-5 h-5" /> Complaints</div>
+                  {complaints.length > 0 && <span className="bg-red-100 text-red-600 text-[10px] py-1 px-2 rounded-full font-bold">{complaints.length}</span>}
+                </button>
+                <button onClick={() => {setActiveTab('khel'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'khel' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <div className="flex items-center gap-3"><FiActivity className="w-5 h-5" /> Khel Registrations</div>
+                  {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
+                </button>
+                <button onClick={() => {setActiveTab('notifications'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiBell className="w-5 h-5" /> Notifications
+                </button>
+                <button onClick={() => {setActiveTab('poll'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiPieChart className="w-5 h-5" /> Manage Poll
+                </button>
+              </nav>
+              <div className="p-4 border-t border-gray-100">
+                <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-white bg-red-500 hover:bg-red-600 w-full py-3 rounded-xl transition-colors font-bold shadow-sm">
+                  <FiLogOut /> Sign Out
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* Scrollable Content Area */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+          <div className="max-w-6xl mx-auto pb-10">
+
+        {activeTab === 'panchayat' && (
+          <div className="mb-10">
+            <h2 className="text-xl font-bold mb-6">Gram Panchayat Admin</h2>
+            <PanchayatAdmin />
+          </div>
+        )}
 
         {activeTab === 'news' && (
           <div>
@@ -843,6 +950,8 @@ const Admin = () => {
             </div>
           </div>
         )}
+          </div>
+        </main>
       </div>
     </div>
   );
