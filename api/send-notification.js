@@ -1,10 +1,12 @@
-import admin from 'firebase-admin';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 
 // Initialize Firebase Admin if it hasn't been initialized yet
-if (!admin.apps.length) {
+if (!getApps().length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         // Handle escaped newlines from environment variables
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Missing title or body' });
     }
 
-    const db = admin.firestore();
+    const db = getFirestore();
     
     // Store the notification in Firestore for history
     try {
@@ -72,7 +74,7 @@ export default async function handler(req, res) {
     };
 
     // Send notifications to all devices
-    const response = await admin.messaging().sendEachForMulticast(payload);
+    const response = await getMessaging().sendEachForMulticast(payload);
     
     return res.status(200).json({ 
       success: true, 
