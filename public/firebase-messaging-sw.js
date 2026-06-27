@@ -28,3 +28,8 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
+// Add a dummy fetch listener to satisfy PWA installability requirements
+self.addEventListener('fetch', (event) => {
+  // Can be left empty or used for offline caching later
+});

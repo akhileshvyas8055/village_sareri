@@ -1,0 +1,25 @@
+{
+  "name": "Brahmano Ki Sareri",
+  "short_name": "Sareri",
+  "description": "Brahmano Ki Sareri — Connecting Village with Future. Explore our rich culture, heritage, festivals, and community updates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait-primary",
+  "categories": ["community", "social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/photos/About.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/photos/About.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

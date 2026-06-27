@@ -5,6 +5,7 @@ import SarpanchCard from '../components/Panchayat/SarpanchCard';
 import WardPanchGrid from '../components/Panchayat/WardPanchGrid';
 import NoticeBoard from '../components/Panchayat/NoticeBoard';
 import PanchayatInfo from '../components/Panchayat/PanchayatInfo';
+import SEO from '../components/SEO';
 
 const PanchayatPage = () => {
   const [data, setData] = useState(null);
@@ -35,6 +36,11 @@ const PanchayatPage = () => {
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] pt-24 pb-12 font-sans">
+      <SEO 
+        title="Gram Panchayat - Brahmano Ki Sareri"
+        description="Brahmano Ki Sareri Gram Panchayat ki jankari. Sarpanch, Ward Panch, Sachiv details aur suchna patt."
+        url="https://sareri.vercel.app/panchayat"
+      />
       <div className="container mx-auto px-4 md:px-8 max-w-7xl">
         
         {/* Header Section */}

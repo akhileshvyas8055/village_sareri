@@ -10,6 +10,8 @@ import NewsPage from './pages/NewsPage';
 import RegistrationPage from './pages/RegistrationPage';
 import NotificationPopup from './components/NotificationPopup';
 import PanchayatPage from './pages/Panchayat';
+import SEO from './components/SEO';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -61,6 +63,7 @@ function App() {
               <Footer />
               <NotificationPopup />
               <FloatingAudioButton />
+              <PWAInstallPrompt />
             </>
           } />
         </Routes>

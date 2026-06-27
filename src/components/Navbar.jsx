@@ -2,23 +2,26 @@ import { useState, useEffect } from 'react';
 import { FiSun, FiMoon, FiMenu, FiX, FiShield } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
+import LanguageToggle from './LanguageToggle';
+import { useLanguage } from '../context/LanguageContext';
 
 const Navbar = ({ darkMode, toggleDarkMode }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
   
   const isHomePage = location.pathname === '/';
   const showSolidNav = !isHomePage || isScrolled;
 
   const navLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Panchayat', href: '/panchayat' },
-    { name: 'About', href: '/about' },
-    { name: 'Gallery', href: '/gallery' },
-    { name: 'Community', href: '/community' },
-    { name: 'News & Complaints', href: '/news' },
-    { name: 'Khel Utsav', href: '/khel-registration' },
+    { name: t('Home'), href: '/' },
+    { name: t('Panchayat'), href: '/panchayat' },
+    { name: t('About'), href: '/about' },
+    { name: t('Gallery'), href: '/gallery' },
+    { name: t('Community'), href: '/community' },
+    { name: t('News & Complaints'), href: '/news' },
+    { name: t('Khel Utsav'), href: '/khel-registration' },
   ];
 
   useEffect(() => {
@@ -60,6 +63,7 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
           </ul>
           
           <div className="flex items-center gap-3">
+            <LanguageToggle />
             <Link 
               to="/admin"
               className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20 backdrop-blur-sm'}`}
@@ -78,7 +82,8 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
         </nav>
 
         {/* Mobile Toggle */}
-        <div className="flex items-center gap-3 md:hidden">
+        <div className="flex items-center gap-2 md:hidden">
+          <LanguageToggle />
           <Link 
             to="/admin"
             className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20'}`}

@@ -1,8 +1,14 @@
 import Gallery from '../sections/Gallery';
+import SEO from '../components/SEO';
 
 const GalleryPage = () => {
   return (
     <div className="pt-20 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <SEO 
+        title="Gallery - Brahmano Ki Sareri Village Photos & Videos"
+        description="Brahmano Ki Sareri ki photo gallery. Ramleela, Mela Purnima, Khel Mahotsav, temples aur gaon ke sundar nazaron ki tasveerein."
+        url="https://sareri.vercel.app/gallery"
+      />
       <div className="text-center py-12">
         <h1 className="text-5xl md:text-6xl font-bold font-heading text-gray-900 dark:text-white mb-4">
           Village <span className="text-saffron">Gallery</span>

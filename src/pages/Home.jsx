@@ -4,10 +4,16 @@ import Highlights from '../sections/Highlights';
 import WeatherCard from '../components/WeatherCard';
 import PollWidget from '../components/PollWidget';
 import VirtualTourBanner from '../components/VirtualTourBanner';
+import SEO from '../components/SEO';
 
 const Home = () => {
   return (
     <div className="flex flex-col">
+      <SEO 
+        title="Brahmano Ki Sareri — Connecting Village with Future"
+        description="Brahmano Ki Sareri, Bhilwara, Rajasthan ki official website. Gaon ki culture, heritage, festivals, Panchayat aur community updates ek jagah."
+        url="https://sareri.vercel.app/"
+      />
       <Hero />
       
       {/* Weather Card - Sits below Hero on mobile, overlaps on desktop */}
