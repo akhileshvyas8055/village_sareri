@@ -12,6 +12,7 @@ import NotificationPopup from './components/NotificationPopup';
 import PanchayatPage from './pages/Panchayat';
 import SEO from './components/SEO';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import MobileBottomNav from './components/MobileBottomNav';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -49,7 +50,7 @@ function App() {
           <Route path="/*" element={
             <>
               <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-              <main className="flex-grow">
+              <main className="flex-grow pb-16 md:pb-0">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<AboutPage />} />
@@ -64,6 +65,7 @@ function App() {
               <NotificationPopup />
               <FloatingAudioButton />
               <PWAInstallPrompt />
+              <MobileBottomNav />
             </>
           } />
         </Routes>

@@ -1,10 +1,23 @@
+import { useState, useEffect } from 'react';
 import { FiInstagram, FiMail, FiMapPin, FiPhoneCall } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
+  const [isMobilePWA, setIsMobilePWA] = useState(false);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const isMobile = window.innerWidth < 768;
+    if (isStandalone && isMobile) {
+      setIsMobilePWA(true);
+    }
+  }, []);
+
+  if (isMobilePWA) return null;
+
   return (
-    <footer className="relative bg-gradient-to-b from-gray-900 to-black text-gray-300 pt-20 pb-10 border-t border-gray-800 overflow-hidden">
+    <footer className="relative bg-gradient-to-b from-gray-900 to-black text-gray-300 pt-20 pb-20 md:pb-10 border-t border-gray-800 overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-saffron via-orange-500 to-green-500" />
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-saffron/5 rounded-full blur-[100px] pointer-events-none translate-x-1/2 -translate-y-1/2" />

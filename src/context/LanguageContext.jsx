@@ -11,6 +11,7 @@ const translations = {
   'Gallery': { hi: 'गैलरी', en: 'Gallery' },
   'Community': { hi: 'समुदाय', en: 'Community' },
   'News & Complaints': { hi: 'समाचार और शिकायत', en: 'News & Complaints' },
+  'News': { hi: 'समाचार', en: 'News' },
   'Khel Utsav': { hi: 'खेल उत्सव', en: 'Khel Utsav' },
 
   // Footer
