@@ -6,61 +6,59 @@ const VirtualTourBanner = () => {
 
   return (
     <>
-    <div className="container mx-auto px-4 my-16">
+    <div className="container mx-auto px-4 my-20">
       <div 
-        className="relative w-full overflow-hidden rounded-3xl shadow-2xl group cursor-pointer border border-[#FF6B00]/30 hover:border-[#FF6B00]/70 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(255,107,0,0.3)]"
+        className="relative w-full overflow-hidden rounded-[2rem] shadow-2xl group cursor-pointer border border-white/20 hover:border-saffron/50 transition-all duration-700 hover:shadow-[0_20px_60px_rgba(255,107,0,0.25)]"
         onClick={() => setIsModalOpen(true)}
       >
         {/* Background Image with Zoom Effect */}
         <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-[3000ms] ease-out group-hover:scale-110"
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-[4000ms] ease-out group-hover:scale-110"
           style={{ 
-            backgroundImage: "url('/photos/About.jpeg')", 
-            backgroundPosition: 'center 40%'
+            backgroundImage: "url('/photos/local_market.jpg')", 
+            backgroundPosition: 'center 60%'
           }}
         ></div>
         
         {/* Elegant Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1A5C2A] via-[#1A5C2A]/80 to-transparent mix-blend-multiply"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-[#1A5C2A]/80 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30"></div>
 
-        {/* Decorative Blurred Circles */}
-        <div className="absolute -right-20 -top-20 w-64 h-64 border-[30px] border-white/5 rounded-full blur-xl group-hover:border-saffron/20 transition-all duration-700"></div>
-        <div className="absolute right-40 bottom-10 w-32 h-32 bg-saffron/20 rounded-full blur-2xl group-hover:bg-saffron/40 transition-all duration-700"></div>
-
-        <div className="relative z-10 p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10">
+        <div className="relative z-10 p-6 md:p-12 lg:p-16 flex flex-col md:flex-row items-center justify-between gap-10 h-full min-h-[400px]">
           
-          <div className="text-white max-w-2xl relative">
+          {/* Glassmorphic Content Card */}
+          <div className="text-white max-w-2xl relative bg-white/5 backdrop-blur-md border border-white/10 p-8 md:p-10 rounded-3xl shadow-xl transform transition-transform duration-500 group-hover:translate-x-2">
+            
             {/* Live Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6 group-hover:bg-saffron/20 transition-colors">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 border border-saffron/30 mb-6 shadow-inner">
               <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-saffron opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-saffron"></span>
               </span>
-              <span className="text-xs font-bold tracking-wider text-saffron uppercase">Street View Added</span>
+              <span className="text-xs font-bold tracking-wider text-saffron uppercase">360° Street View</span>
             </div>
 
             {/* Typography */}
-            <h2 className="text-4xl md:text-6xl font-heading font-extrabold mb-4 drop-shadow-xl flex flex-col md:flex-row items-start md:items-center gap-3 text-white">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-saffron to-yellow-300">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold mb-4 drop-shadow-2xl text-white leading-tight">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron via-yellow-400 to-orange-500">
                 Gaon Ghumao
               </span>
-              <span className="hidden md:inline text-gray-300 font-light">|</span>
-              <span className="text-2xl md:text-4xl font-light text-gray-200">Virtual Tour</span>
+              <br className="hidden md:block" />
+              <span className="text-3xl md:text-4xl lg:text-5xl font-light text-gray-200 mt-2 block">Virtual Tour</span>
             </h2>
-            <p className="text-lg md:text-2xl font-medium text-gray-200 drop-shadow-md border-l-4 border-saffron pl-5 py-1">
-              Brahmano Ki Sareri ka <span className="font-bold text-white">360° nazar</span> se darshan karo, kahin se bhi.
+            <p className="text-lg md:text-xl font-medium text-gray-300 border-l-4 border-saffron pl-5 py-2 bg-gradient-to-r from-black/20 to-transparent rounded-r-lg">
+              Brahmano Ki Sareri ki sadkon ka <span className="font-bold text-white">live 360° nazar</span> se darshan karo, bilkul real-time experience!
             </p>
           </div>
           
           {/* Glowing CTA Button */}
-          <div className="relative mt-6 md:mt-0 shrink-0">
-            <div className="absolute -inset-2 bg-gradient-to-r from-saffron via-orange-500 to-yellow-400 rounded-full blur-lg opacity-60 group-hover:opacity-100 transition duration-500 group-hover:duration-200 animate-pulse"></div>
+          <div className="relative mt-8 md:mt-0 shrink-0 transform transition-transform duration-500 group-hover:-translate-x-2">
+            <div className="absolute -inset-4 bg-gradient-to-r from-saffron via-orange-600 to-yellow-500 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition duration-700 animate-pulse"></div>
             <button 
-              className="relative px-8 py-5 md:px-10 md:py-5 bg-gradient-to-r from-orange-600 to-saffron text-white font-extrabold rounded-full text-xl shadow-2xl transition-all transform group-hover:scale-105 flex items-center gap-3 border border-orange-400/50"
+              className="relative px-8 py-5 md:px-10 md:py-6 bg-gradient-to-r from-orange-600 to-saffron text-white font-extrabold rounded-full text-xl shadow-2xl transition-all transform hover:scale-110 flex items-center gap-3 border-2 border-white/20 hover:border-white/50 backdrop-blur-sm"
             >
-              <FiMap className="w-6 h-6 animate-bounce" />
-              Abhi Dekho ✨
+              <FiMap className="w-7 h-7 animate-bounce" />
+              <span className="tracking-wide">Abhi Dekho ✨</span>
             </button>
           </div>
         </div>
