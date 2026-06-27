@@ -13,6 +13,7 @@ import PanchayatPage from './pages/Panchayat';
 import SEO from './components/SEO';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MobileBottomNav from './components/MobileBottomNav';
+import ComplaintPage from './pages/ComplaintPage';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -57,6 +58,7 @@ function App() {
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/community" element={<CommunityPage />} />
                   <Route path="/news" element={<NewsPage />} />
+                  <Route path="/complaint" element={<ComplaintPage />} />
                   <Route path="/khel-registration" element={<RegistrationPage />} />
                   <Route path="/panchayat" element={<PanchayatPage />} />
                 </Routes>

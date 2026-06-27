@@ -11,7 +11,7 @@ const MobileBottomNav = () => {
     { name: t('Panchayat'), path: '/panchayat', icon: <FiUsers className="w-[18px] h-[18px]" /> },
     { name: t('Gallery'), path: '/gallery', icon: <FiImage className="w-[18px] h-[18px]" /> },
     { name: t('News'), path: '/news', icon: <FiBell className="w-[18px] h-[18px]" /> },
-    { name: t('Complaint'), path: '/news', icon: <FiEdit3 className="w-[18px] h-[18px]" /> },
+    { name: t('Complaint'), path: '/complaint', icon: <FiEdit3 className="w-[18px] h-[18px]" /> },
     { name: t('About'), path: '/about', icon: <FiInfo className="w-[18px] h-[18px]" /> }
   ];
 
