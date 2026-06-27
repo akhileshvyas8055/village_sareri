@@ -30,6 +30,19 @@
     transition-duration: 300ms;
     overflow-x: hidden;
     width: 100%;
+    top: 0 !important; /* Prevent Google Translate from shifting body */
+  }
+
+  /* Hide Google Translate UI elements */
+  .skiptranslate {
+    display: none !important;
+  }
+  .goog-te-spinner-pos {
+    display: none !important;
+  }
+  .goog-text-highlight {
+    background-color: transparent !important;
+    box-shadow: none !important;
   }
 
   .dark body {

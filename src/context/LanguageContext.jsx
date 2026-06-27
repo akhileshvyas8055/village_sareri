@@ -58,6 +58,17 @@ export const LanguageProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('sareri_lang', lang);
     document.documentElement.lang = lang === 'hi' ? 'hi' : 'en';
+
+    // Trigger Google Translate
+    try {
+      const selectElement = document.querySelector('.goog-te-combo');
+      if (selectElement) {
+        selectElement.value = lang === 'hi' ? 'hi' : 'en';
+        selectElement.dispatchEvent(new Event('change'));
+      }
+    } catch (error) {
+      console.log('Google Translate not ready yet');
+    }
   }, [lang]);
 
   const toggleLanguage = () => {
