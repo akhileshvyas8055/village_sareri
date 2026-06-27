@@ -3,6 +3,7 @@ import KhelBanner from '../sections/KhelBanner';
 import Highlights from '../sections/Highlights';
 import WeatherCard from '../components/WeatherCard';
 import PollWidget from '../components/PollWidget';
+import VirtualTourBanner from '../components/VirtualTourBanner';
 
 const Home = () => {
   return (
@@ -13,6 +14,8 @@ const Home = () => {
       <div className="relative z-20 mt-6 md:-mt-24 mb-10 md:mb-12 container mx-auto px-4 flex justify-center md:justify-end">
         <WeatherCard />
       </div>
+
+      <VirtualTourBanner />
 
       <KhelBanner />
       <PollWidget />
