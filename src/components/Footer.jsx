@@ -14,7 +14,16 @@ const Footer = () => {
     }
   }, []);
 
-  if (isMobilePWA) return null;
+  if (isMobilePWA) {
+    return (
+      <footer className="bg-white dark:bg-darkCard pb-24 pt-6 border-t border-gray-200 dark:border-gray-800 text-center">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          &copy; {new Date().getFullYear()} <span className="text-gray-900 dark:text-white font-semibold notranslate">Brahmano Ki Sareri</span>.<br />
+          Built with <span className="text-red-500">❤️</span> by <span className="text-gray-900 dark:text-white font-bold tracking-wide">Akhilesh Vyas</span>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="relative bg-gradient-to-b from-gray-900 to-black text-gray-300 pt-20 pb-20 md:pb-10 border-t border-gray-800 overflow-hidden">
