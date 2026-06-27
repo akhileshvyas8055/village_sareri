@@ -238,6 +238,13 @@ const Admin = () => {
     }
   };
 
+  const handleUpdateComplaint = async (id, field, value) => {
+    const comp = complaints.find(c => c.id === id);
+    if(comp) {
+      await set(ref(rtdb, `adminData/complaints/${id}`), { ...comp, [field]: value });
+    }
+  };
+
   const handleDeleteRegistration = async (id) => {
     if(window.confirm('Are you sure you want to delete this registration?')) {
       await remove(ref(rtdb, `adminData/khelRegistrations/${id}`));
@@ -712,6 +719,35 @@ const Admin = () => {
                       <img src={comp.photo} alt="Complaint Evidence" className="max-w-xs rounded-lg border border-gray-200 shadow-sm" />
                     </div>
                   )}
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status (Accept/Reject)</label>
+                      <select 
+                        value={comp.status || 'Pending'}
+                        onChange={(e) => handleUpdateComplaint(comp.id, 'status', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-saffron bg-white text-sm font-medium ${
+                          comp.status === 'Resolved' ? 'text-green-600' : 
+                          comp.status === 'Rejected' ? 'text-red-600' : 
+                          comp.status === 'In Progress' ? 'text-blue-600' : 'text-orange-600'
+                        }`}
+                      >
+                        <option value="Pending">⏳ Pending</option>
+                        <option value="In Progress">🔄 In Progress</option>
+                        <option value="Resolved">✅ Resolved (Accept)</option>
+                        <option value="Rejected">❌ Rejected</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Admin Reply to User</label>
+                      <textarea 
+                        value={comp.adminReply || ''}
+                        onChange={(e) => handleUpdateComplaint(comp.id, 'adminReply', e.target.value)}
+                        placeholder="Type reply to user (they will see this in their app)..."
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-saffron min-h-[42px] text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
