@@ -20,6 +20,7 @@ const ProfilePage = () => {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error(error);
+      alert('Login Failed: ' + error.message);
     }
   };
 

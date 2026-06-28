@@ -80,25 +80,12 @@ export default async function handler(req, res) {
     const origin = req.headers.origin || 'https://' + req.headers.host;
     
     const payload = {
-      notification: {
+      data: {
         title: title.length > 40 ? title.substring(0, 37) + '...' : title,
         body: body,
-        image: `${origin}/photos/About.jpeg`, // Adds the large logo image to the notification
-      },
-      webpush: {
-        notification: {
-          icon: `${origin}/photos/About.jpeg`, 
-          badge: `${origin}/photos/About.jpeg`, 
-          image: `${origin}/photos/About.jpeg`, 
-          requireInteraction: true
-        },
-        fcm_options: {
-          link: link || `${origin}/`
-        }
-      },
-      data: {
         link: link || `${origin}/`,
-        image: `${origin}/photos/About.jpeg`
+        image: `${origin}/photos/About.jpeg`,
+        icon: `${origin}/photos/About.jpeg`
       },
       tokens: maxTokens,
     };

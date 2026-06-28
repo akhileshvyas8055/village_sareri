@@ -19,14 +19,15 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   
-  const notificationTitle = payload.notification?.title || 'Brahmano Ki Sareri Update';
+  const notificationTitle = payload.data?.title || 'Brahmano Ki Sareri Update';
   const notificationOptions = {
-    body: payload.notification?.body || 'You have a new message from the village.',
-    icon: '/photos/About.jpeg',
-    badge: '/photos/About.jpeg',
-    image: payload.notification?.image || payload.data?.image || '/photos/About.jpeg',
+    body: payload.data?.body || 'You have a new message from the village.',
+    icon: payload.data?.icon || '/photos/About.jpeg',
+    badge: payload.data?.icon || '/photos/About.jpeg',
+    image: payload.data?.image || '/photos/About.jpeg',
+    requireInteraction: true,
     data: {
-      url: payload.fcmOptions?.link || payload.data?.link || '/'
+      url: payload.data?.link || '/'
     }
   };
 
