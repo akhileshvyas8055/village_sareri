@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { onMessage } from 'firebase/messaging';
+import { messaging } from './firebase';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingAudioButton from './components/FloatingAudioButton';
@@ -30,6 +32,35 @@ function App() {
     // Check system preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setDarkMode(true);
+    }
+
+    // Foreground notification listener
+    if (messaging) {
+      const unsub = onMessage(messaging, (payload) => {
+        if (Notification.permission === 'granted') {
+          const title = payload.data?.title || 'Village Alert';
+          const options = {
+            body: payload.data?.body,
+            icon: payload.data?.icon || '/photos/About.jpeg',
+            image: payload.data?.image || '/photos/About.jpeg',
+            requireInteraction: true,
+            data: { url: payload.data?.link || '/' }
+          };
+          
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+              registration.showNotification(title, options);
+            });
+          } else {
+            const notif = new Notification(title, options);
+            notif.onclick = function() {
+              window.open(payload.data?.link || '/', '_blank');
+              notif.close();
+            };
+          }
+        }
+      });
+      return () => unsub();
     }
   }, []);
 
