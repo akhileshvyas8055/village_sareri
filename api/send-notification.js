@@ -84,7 +84,7 @@ async function storeNotificationHistory(accessToken, projectId, title, body, typ
 }
 
 // --- FCM v1 API ---
-async function sendFCMNotification(accessToken, projectId, token, notification, webpush, data) {
+async function sendFCMNotification(accessToken, projectId, token, data) {
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   const res = await fetch(url, {
     method: 'POST',
@@ -95,8 +95,6 @@ async function sendFCMNotification(accessToken, projectId, token, notification, 
     body: JSON.stringify({
       message: {
         token,
-        notification,
-        webpush,
         data,
       },
     }),
@@ -137,25 +135,11 @@ export default async function handler(req, res) {
 
     const origin = req.headers.origin || 'https://' + req.headers.host;
 
-    const notification = {
+    const data = {
       title: title.length > 100 ? title.substring(0, 97) + '...' : title,
       body: body,
       image: `${origin}/photos/About.jpeg`,
-    };
-
-    const webpush = {
-      notification: {
-        icon: `${origin}/photos/About.jpeg`,
-        badge: `${origin}/photos/About.jpeg`,
-        image: `${origin}/photos/About.jpeg`,
-        requireInteraction: true,
-      },
-      fcm_options: {
-        link: link || `${origin}/`,
-      },
-    };
-
-    const data = {
+      icon: `${origin}/photos/About.jpeg`,
       link: link || `${origin}/`,
     };
 
@@ -165,7 +149,7 @@ export default async function handler(req, res) {
 
     const sendPromises = tokens.map(async (token) => {
       try {
-        const ok = await sendFCMNotification(accessToken, projectId, token, notification, webpush, data);
+        const ok = await sendFCMNotification(accessToken, projectId, token, data);
         if (ok) successCount++;
         else failureCount++;
       } catch {
