@@ -22,10 +22,11 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || 'Brahmano Ki Sareri Update';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new message from the village.',
-    icon: '/photos/About.jpeg', // Fixed correct logo path
+    icon: '/photos/About.jpeg',
     badge: '/photos/About.jpeg',
+    image: payload.notification?.image || payload.data?.image || '/photos/About.jpeg',
     data: {
-      url: payload.fcmOptions?.link || '/'
+      url: payload.fcmOptions?.link || payload.data?.link || '/'
     }
   };
 

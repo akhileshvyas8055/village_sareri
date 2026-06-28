@@ -93,8 +93,12 @@ export default async function handler(req, res) {
           requireInteraction: true
         },
         fcm_options: {
-          link: link || `${origin}/` // Opens the custom link, or the website root
+          link: link || `${origin}/`
         }
+      },
+      data: {
+        link: link || `${origin}/`,
+        image: `${origin}/photos/About.jpeg`
       },
       tokens: maxTokens,
     };
