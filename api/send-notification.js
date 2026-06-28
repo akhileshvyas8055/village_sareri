@@ -1,9 +1,7 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
+import admin from 'firebase-admin';
 
 let initError = null;
-if (!getApps().length) {
+if (!admin.apps.length) {
   try {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
     if (privateKey) {
@@ -16,8 +14,8 @@ if (!getApps().length) {
       privateKey = privateKey.replace(/\\n/g, '\n');
     }
 
-    initializeApp({
-      credential: cert({
+    admin.initializeApp({
+      credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: privateKey,
@@ -34,7 +32,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
-  if (!getApps().length) {
+  if (!admin.apps.length) {
     return res.status(500).json({ success: false, message: 'Failed to initialize Firebase Admin', error: initError });
   }
 
@@ -45,7 +43,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Missing title or body' });
     }
 
-    const db = getFirestore();
+    const db = admin.firestore();
     
     // Store the notification in Firestore for history
     try {
@@ -80,18 +78,30 @@ export default async function handler(req, res) {
     const origin = req.headers.origin || 'https://' + req.headers.host;
     
     const payload = {
-      data: {
-        title: title.length > 40 ? title.substring(0, 37) + '...' : title,
+      notification: {
+        title: title.length > 100 ? title.substring(0, 97) + '...' : title,
         body: body,
-        link: link || `${origin}/`,
         image: `${origin}/photos/About.jpeg`,
-        icon: `${origin}/photos/About.jpeg`
+      },
+      webpush: {
+        notification: {
+          icon: `${origin}/photos/About.jpeg`,
+          badge: `${origin}/photos/About.jpeg`,
+          image: `${origin}/photos/About.jpeg`,
+          requireInteraction: true
+        },
+        fcm_options: {
+          link: link || `${origin}/`
+        }
+      },
+      data: {
+        link: link || `${origin}/`
       },
       tokens: maxTokens,
     };
 
     // Send notifications to all devices
-    const response = await getMessaging().sendEachForMulticast(payload);
+    const response = await admin.messaging().sendEachForMulticast(payload);
     
     return res.status(200).json({ 
       success: true, 

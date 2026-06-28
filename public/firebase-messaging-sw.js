@@ -15,43 +15,8 @@ firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
-  const notificationTitle = payload.data?.title || 'Brahmano Ki Sareri Update';
-  const notificationOptions = {
-    body: payload.data?.body || 'You have a new message from the village.',
-    icon: payload.data?.icon || '/photos/About.jpeg',
-    badge: payload.data?.icon || '/photos/About.jpeg',
-    image: payload.data?.image || '/photos/About.jpeg',
-    requireInteraction: true,
-    data: {
-      url: payload.data?.link || '/'
-    }
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-// Handle notification click to open the app
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  const urlToOpen = event.notification.data?.url || '/';
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
-  );
-});
+// Let Firebase handle background messages automatically using the standard notification payload.
+// Do NOT add onBackgroundMessage here, otherwise it will result in double notifications!
 
 // Add a dummy fetch listener to satisfy PWA installability requirements
 self.addEventListener('fetch', (event) => {

@@ -38,11 +38,11 @@ function App() {
     if (messaging) {
       const unsub = onMessage(messaging, (payload) => {
         if (Notification.permission === 'granted') {
-          const title = payload.data?.title || 'Village Alert';
+          const title = payload.notification?.title || payload.data?.title || 'Village Alert';
           const options = {
-            body: payload.data?.body,
-            icon: payload.data?.icon || '/photos/About.jpeg',
-            image: payload.data?.image || '/photos/About.jpeg',
+            body: payload.notification?.body || payload.data?.body,
+            icon: payload.notification?.icon || '/photos/About.jpeg',
+            image: payload.notification?.image || '/photos/About.jpeg',
             requireInteraction: true,
             data: { url: payload.data?.link || '/' }
           };

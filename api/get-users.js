@@ -1,8 +1,7 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import admin from 'firebase-admin';
 
 let initError = null;
-if (!getApps().length) {
+if (!admin.apps.length) {
   try {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
     if (privateKey) {
@@ -15,8 +14,8 @@ if (!getApps().length) {
       privateKey = privateKey.replace(/\\n/g, '\n');
     }
 
-    initializeApp({
-      credential: cert({
+    admin.initializeApp({
+      credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: privateKey,
@@ -38,7 +37,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const listUsersResult = await getAuth().listUsers(1000);
+    const listUsersResult = await admin.auth().listUsers(1000);
     const users = listUsersResult.users.map((userRecord) => ({
       uid: userRecord.uid,
       email: userRecord.email,

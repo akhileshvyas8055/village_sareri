@@ -230,11 +230,11 @@ const Admin = () => {
   const handleCirculateNews = async (item, isSilent = false) => {
     if (isSilent || window.confirm(`Are you sure you want to broadcast "${item.title}" as a Push Notification?`)) {
       let prefix = '';
-      if (item.type === 'Emergency Alert') prefix = '🚨 Important Alert: ';
-      else if (item.type === 'Event') prefix = '🎉 Event Update: ';
-      else if (item.type === 'Announcement') prefix = '📣 Announcement: ';
-      else if (item.type === 'Notice') prefix = '📜 Panchayat Notice: ';
-      else prefix = '📰 Village News: ';
+      if (item.type === 'Emergency Alert') prefix = '🚨 ';
+      else if (item.type === 'Event') prefix = '🎉 ';
+      else if (item.type === 'Announcement') prefix = '📣 ';
+      else if (item.type === 'Notice') prefix = '📜 ';
+      else prefix = '📰 ';
 
       const fullTitle = `${prefix}${item.title || 'Update'}`;
       
