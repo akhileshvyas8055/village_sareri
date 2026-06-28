@@ -140,14 +140,14 @@ export default async function handler(req, res) {
     const notification = {
       title: title.length > 100 ? title.substring(0, 97) + '...' : title,
       body: body,
-      image: `${origin}/logo192.png` // Using image field for FCM v1 native display
+      image: `${origin}/photos/About.jpeg`
     };
 
     const webpush = {
       notification: {
-        icon: `${origin}/logo192.png`,
-        badge: `${origin}/logo192.png`,
-        image: `${origin}/logo192.png`,
+        icon: `${origin}/photos/About.jpeg`,
+        badge: `${origin}/photos/About.jpeg`,
+        image: `${origin}/photos/About.jpeg`,
         requireInteraction: true,
       },
       fcm_options: {
@@ -157,7 +157,7 @@ export default async function handler(req, res) {
 
     const data = {
       link: link || `${origin}/`,
-      icon: `${origin}/logo192.png` // Included in data payload for SW interception
+      icon: `${origin}/photos/About.jpeg` 
     };
 
     // Step 4: Send to each token (FCM v1 API requires one-at-a-time)

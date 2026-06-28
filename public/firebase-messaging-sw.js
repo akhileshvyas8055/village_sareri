@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
   // Use the exact format requested by the user
   const title = payload.notification?.title || payload.data?.title || 'Village Sareri Update';
   const body = payload.notification?.body || payload.data?.body || 'नई सूचना उपलब्ध है';
-  const icon = payload.notification?.icon || payload.data?.icon || '/logo192.png';
+  const icon = payload.notification?.icon || payload.data?.icon || '/photos/About.jpeg';
   
   self.registration.showNotification(title, {
     body: body,
