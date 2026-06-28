@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText, FiUserCheck } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, onValue, set, remove, push, get } from 'firebase/database';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db, rtdb } from '../firebase';
+import { auth, db, rtdb, storage } from '../firebase';
 import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
 
 const Admin = () => {
@@ -21,19 +22,40 @@ const Admin = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifyTitle, setNotifyTitle] = useState('');
   const [notifyBody, setNotifyBody] = useState('');
+  const [notifyLink, setNotifyLink] = useState('');
   const [notifyType, setNotifyType] = useState('News Update');
   const [isSending, setIsSending] = useState(false);
+  const [uploadingImageId, setUploadingImageId] = useState(null);
 
   // Poll State
   const [pollData, setPollData] = useState(null);
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [newPollOptions, setNewPollOptions] = useState(['', '']);
 
+  // Users State
+  const [appUsers, setAppUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   // Load from Firestore with real-time sync
   useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await fetch('/api/get-users');
+        const data = await response.json();
+        if (data.success) {
+          setAppUsers(data.users);
+        }
+      } catch (error) {
+        console.error('Failed to fetch users', error);
+      }
+      setLoadingUsers(false);
+    };
+
     const authStatus = sessionStorage.getItem('sareriAdminAuth');
     if (authStatus === 'true') {
       setIsAuthenticated(true);
+      fetchUsers();
     }
 
     // Real-time listener for News
@@ -104,6 +126,7 @@ const Admin = () => {
       title: 'New Update Title',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       desc: 'Update description goes here.',
+      image: '',
       timestamp: Date.now()
     };
     set(newRef, newItem);
@@ -120,7 +143,32 @@ const Admin = () => {
     setNews(updatedNews);
   };
 
-  const sendPushNotification = async (title, body, type = 'General') => {
+  const handleImageUpload = async (id, file) => {
+    if (!file) return;
+    
+    // 150KB limit to prevent RTDB from lagging/crashing
+    if (file.size > 150 * 1024) {
+      alert('❌ File is too large! \n\nPlease compress the image to under 150 KB. \nStoring large images directly in the database will crash the website.');
+      return;
+    }
+
+    setUploadingImageId(id);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      handleUpdateNews(id, 'image', base64String);
+      setUploadingImageId(null);
+    };
+    reader.onerror = () => {
+      alert('Error reading file!');
+      setUploadingImageId(null);
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
+  const sendPushNotification = async (title, body, type = 'General', link = '') => {
     setIsSending(true);
     try {
       // Call the completely free Vercel Serverless Function to broadcast the push!
@@ -128,7 +176,7 @@ const Admin = () => {
       const response = await fetch('/api/send-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, type })
+        body: JSON.stringify({ title, body, type, link })
       });
       
       const result = await response.json();
@@ -212,11 +260,12 @@ const Admin = () => {
 
     const fullTitle = `${prefix}${notifyTitle}`;
     
-    const success = await sendPushNotification(fullTitle, notifyBody, notifyType);
+    const success = await sendPushNotification(fullTitle, notifyBody, notifyType, notifyLink);
     if (success) {
       alert('Notification sent successfully to all subscribed users!');
       setNotifyTitle('');
       setNotifyBody('');
+      setNotifyLink('');
     } else {
       alert('Failed to send notification. Check console for details.');
     }
@@ -477,7 +526,10 @@ const Admin = () => {
             {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
           </button>
 
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6 px-2">Engagement</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6 px-2">Community & Engagement</p>
+          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'users' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiUserCheck className={`w-5 h-5 ${activeTab === 'users' ? 'text-blue-600' : 'text-gray-400'}`} /> Registered Users
+          </button>
           <button onClick={() => setActiveTab('notifications')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
             <FiBell className={`w-5 h-5 ${activeTab === 'notifications' ? 'text-indigo-600' : 'text-gray-400'}`} /> Push Notifications
           </button>
@@ -556,6 +608,9 @@ const Admin = () => {
                   <div className="flex items-center gap-3"><FiActivity className="w-5 h-5" /> Khel Registrations</div>
                   {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
                 </button>
+                <button onClick={() => {setActiveTab('users'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'users' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiUserCheck className="w-5 h-5" /> Registered Users
+                </button>
                 <button onClick={() => {setActiveTab('notifications'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}>
                   <FiBell className="w-5 h-5" /> Notifications
                 </button>
@@ -580,6 +635,52 @@ const Admin = () => {
           <div className="mb-10">
             <h2 className="text-xl font-bold mb-6">Gram Panchayat Admin</h2>
             <PanchayatAdmin />
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Registered Users</h2>
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">{appUsers.length} Users</span>
+            </div>
+            
+            {loadingUsers ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron"></div>
+              </div>
+            ) : appUsers.length === 0 ? (
+              <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500">
+                No registered users found.
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-4">Profile</th>
+                        <th className="px-6 py-4">Name</th>
+                        <th className="px-6 py-4">Email Address</th>
+                        <th className="px-6 py-4">Registration Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {appUsers.map((u) => (
+                        <tr key={u.uid} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <img src={u.photoURL || 'https://via.placeholder.com/40'} alt="Profile" className="w-10 h-10 rounded-full border border-gray-200" />
+                          </td>
+                          <td className="px-6 py-4 font-bold text-gray-900">{u.displayName || 'No Name'}</td>
+                          <td className="px-6 py-4">{u.email}</td>
+                          <td className="px-6 py-4">{new Date(u.creationTime).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -639,6 +740,18 @@ const Admin = () => {
                         <option value="Event">Event</option>
                         <option value="Announcement">Announcement</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Upload Photo (Optional)</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(item.id, e.target.files[0])}
+                        disabled={uploadingImageId === item.id}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm bg-gray-50 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-saffron file:text-white hover:file:bg-orange-600 transition-all cursor-pointer"
+                      />
+                      {uploadingImageId === item.id && <p className="text-xs text-saffron mt-1 font-bold animate-pulse">Uploading photo...</p>}
+                      {item.image && uploadingImageId !== item.id && <p className="text-xs text-green-600 mt-1 font-bold">✓ Photo added successfully</p>}
                     </div>
                   </div>
 
@@ -857,6 +970,18 @@ const Admin = () => {
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1 text-right">{notifyBody.length}/150</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Click Link (Optional)</label>
+                  <input 
+                    type="url"
+                    value={notifyLink}
+                    onChange={(e) => setNotifyLink(e.target.value)}
+                    placeholder="e.g. https://brahmanokisareri.com/news"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 font-medium"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-left">The link that opens when users tap on the notification.</p>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">

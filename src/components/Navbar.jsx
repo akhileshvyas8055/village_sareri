@@ -3,15 +3,25 @@ import { FiMenu, FiX, FiShield, FiSettings } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 
 const Navbar = ({ darkMode, toggleDarkMode }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const location = useLocation();
   const { t } = useLanguage();
   
   const isHomePage = location.pathname === '/';
   const showSolidNav = !isHomePage || isScrolled;
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsub();
+  }, []);
 
   const navLinks = [
     { name: t('Home'), href: '/' },
@@ -64,24 +74,53 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
           
           <div className="flex items-center gap-3">
             <Link 
-              to="/admin"
-              className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20 backdrop-blur-sm'}`}
-              title="Admin Login"
-            >
-              <FiShield className="w-5 h-5" />
-            </Link>
-            <Link 
               to="/settings"
               className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20 backdrop-blur-sm'}`}
               title="Settings"
             >
               <FiSettings className="w-5 h-5" />
             </Link>
+            
+            <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-1"></div>
+            
+            {user ? (
+              <Link to="/profile" className="relative group cursor-pointer block">
+                <img 
+                  src={user.photoURL || 'https://via.placeholder.com/40'} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full border-2 border-saffron object-cover hover:shadow-md transition-all"
+                  title={user.displayName}
+                />
+              </Link>
+            ) : (
+              <Link 
+                to="/profile"
+                className="flex items-center gap-2 bg-saffron text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-orange-600 transition-colors shadow-sm"
+              >
+                Profile Login
+              </Link>
+            )}
           </div>
         </nav>
 
-        {/* Mobile Toggle */}
-        <div className="flex items-center gap-1 sm:gap-2 md:hidden">
+        {/* Mobile Toggle & Profile */}
+        <div className="flex items-center gap-3 md:hidden">
+          {user ? (
+            <Link to="/profile">
+              <img 
+                src={user.photoURL || 'https://via.placeholder.com/40'} 
+                alt="Profile" 
+                className="w-8 h-8 rounded-full border-2 border-saffron object-cover"
+              />
+            </Link>
+          ) : (
+            <Link 
+              to="/profile"
+              className="bg-saffron text-white px-3 py-1.5 rounded-full text-xs font-bold"
+            >
+              Login
+            </Link>
+          )}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`p-2 rounded-full transition-colors ${showSolidNav ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' : 'text-white hover:bg-white/20'}`}
@@ -122,14 +161,6 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
                 >
                   <FiSettings className="w-6 h-6" />
                   <span className="text-xs font-medium">Settings</span>
-                </Link>
-                <Link 
-                  to="/admin"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex flex-col items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-saffron"
-                >
-                  <FiShield className="w-6 h-6" />
-                  <span className="text-xs font-medium">Admin</span>
                 </Link>
               </li>
             </ul>

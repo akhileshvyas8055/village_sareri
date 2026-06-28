@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCamera, FiUpload, FiMic, FiCalendar, FiCheckCircle, FiClock, FiSearch, FiFileText } from 'react-icons/fi';
+import { FiCamera, FiUpload, FiMic, FiCalendar, FiCheckCircle, FiClock, FiSearch, FiFileText, FiUser } from 'react-icons/fi';
 import { ref, push, set, get, query, orderByChild, equalTo } from 'firebase/database';
-import { rtdb } from '../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { Link } from 'react-router-dom';
+import { rtdb, auth } from '../firebase';
 
 const ComplaintForm = () => {
   const [activeTab, setActiveTab] = useState('register'); // 'register' or 'track'
@@ -15,7 +17,20 @@ const ComplaintForm = () => {
   const [trackIdInput, setTrackIdInput] = useState('');
   const [trackedComplaint, setTrackedComplaint] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
-  const [trackError, setTrackError] = useState('');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser && !complaint.name) {
+        setComplaint(prev => ({ 
+          ...prev, 
+          name: currentUser.displayName || prev.name
+        }));
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -99,16 +114,19 @@ const ComplaintForm = () => {
     try {
       const searchId = trackIdInput.trim().toUpperCase();
       const complaintsRef = ref(rtdb, 'adminData/complaints');
-      const q = query(complaintsRef, orderByChild('trackingId'), equalTo(searchId));
-      
-      const snapshot = await get(q);
+      const snapshot = await get(complaintsRef);
       if (snapshot.exists()) {
         const data = snapshot.val();
-        // Since trackingId should be unique, we just take the first match
-        const complaintData = Object.values(data)[0];
-        setTrackedComplaint(complaintData);
+        const complaintsArray = Object.values(data);
+        const complaintData = complaintsArray.find(c => c.trackingId === searchId);
+        
+        if (complaintData) {
+          setTrackedComplaint(complaintData);
+        } else {
+          setTrackError('No complaint found with this Tracking ID. Please check and try again.');
+        }
       } else {
-        setTrackError('No complaint found with this Tracking ID. Please check and try again.');
+        setTrackError('No complaints found in the system.');
       }
     } catch (error) {
       console.error('Error tracking complaint:', error);
@@ -198,8 +216,36 @@ const ComplaintForm = () => {
                     Track Status Now
                   </button>
                 </div>
+              ) : !user ? (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FiUser className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Profile Required</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                    To prevent spam and ensure genuine complaints, please create or log into your verified village profile.
+                  </p>
+                  <Link 
+                    to="/profile"
+                    className="bg-saffron text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 flex items-center justify-center gap-2 mx-auto transition-all w-full max-w-xs"
+                  >
+                    Go to Profile Page
+                  </Link>
+                </div>
               ) : (
             <form onSubmit={submitComplaint} className="space-y-5">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 mb-2">
+                <div className="flex items-center gap-3">
+                  <img src={user.photoURL || 'https://via.placeholder.com/40'} alt="Profile" className="w-10 h-10 rounded-full border border-gray-300" />
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{user.displayName}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => signOut(auth)} className="text-sm text-red-500 hover:text-red-700 font-bold px-3 py-1 bg-red-50 dark:bg-red-900/20 rounded-lg transition-colors">
+                  Logout
+                </button>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name / पूरा नाम</label>
                 <input 

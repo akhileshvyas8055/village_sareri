@@ -2,21 +2,30 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 
-// Initialize Firebase Admin if it hasn't been initialized yet
+let initError = null;
 if (!getApps().length) {
   try {
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (privateKey) {
+      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+
     initializeApp({
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Handle escaped newlines from environment variables
-        privateKey: process.env.FIREBASE_PRIVATE_KEY 
-          ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') 
-          : undefined,
+        privateKey: privateKey,
       }),
     });
   } catch (error) {
     console.error('Firebase admin initialization error', error);
+    initError = error.message;
   }
 }
 
@@ -25,9 +34,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
+  if (!getApps().length) {
+    return res.status(500).json({ success: false, message: 'Failed to initialize Firebase Admin', error: initError });
+  }
 
   try {
-    const { title, body, type } = req.body;
+    const { title, body, type, link } = req.body;
     
     if (!title || !body) {
       return res.status(400).json({ success: false, message: 'Missing title or body' });
@@ -65,10 +77,24 @@ export default async function handler(req, res) {
     // FCM sendEachForMulticast accepts maximum 500 tokens at a time
     const maxTokens = tokens.slice(0, 500);
 
+    const origin = req.headers.origin || 'https://' + req.headers.host;
+    
     const payload = {
       notification: {
-        title: title,
+        title: title.length > 40 ? title.substring(0, 37) + '...' : title,
         body: body,
+        image: `${origin}/photos/About.jpeg`, // Adds the large logo image to the notification
+      },
+      webpush: {
+        notification: {
+          icon: `${origin}/photos/About.jpeg`, 
+          badge: `${origin}/photos/About.jpeg`, 
+          image: `${origin}/photos/About.jpeg`, 
+          requireInteraction: true
+        },
+        fcm_options: {
+          link: link || `${origin}/` // Opens the custom link, or the website root
+        }
       },
       tokens: maxTokens,
     };

@@ -15,6 +15,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MobileBottomNav from './components/MobileBottomNav';
 import ComplaintPage from './pages/ComplaintPage';
 import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -63,6 +64,7 @@ function App() {
                   <Route path="/khel-registration" element={<RegistrationPage />} />
                   <Route path="/panchayat" element={<PanchayatPage />} />
                   <Route path="/settings" element={<SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                 </Routes>
               </main>
               <Footer />

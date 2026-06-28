@@ -51,22 +51,37 @@ const NewsList = () => {
           {newsUpdates.map((item, index) => (
             <motion.div 
               key={item.id}
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="glass-card p-6 border-l-4 border-l-saffron hover:shadow-xl transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-700"
             >
-              <div className="flex justify-between items-start mb-3">
-                <span className="px-3 py-1 bg-saffron/10 text-saffron text-xs font-bold uppercase rounded-full tracking-wider flex items-center gap-1">
-                  {item.type === 'Notice' && <FiBell />}
-                  {item.type === 'Event' && <FiCalendar />}
-                  {item.type === 'Announcement' && <FiBell />}
-                  {item.type}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{item.date}</span>
+              {item.image && (
+                <div className="w-full h-56 md:h-80 overflow-hidden relative group cursor-pointer">
+                  <img 
+                    src={item.image} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+              )}
+              
+              <div className="p-6 md:p-8 relative">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="px-4 py-1.5 bg-saffron/10 text-saffron text-xs font-bold uppercase rounded-full tracking-wider flex items-center gap-1.5 border border-saffron/20">
+                    {item.type === 'Notice' && <FiBell />}
+                    {item.type === 'Event' && <FiCalendar />}
+                    {item.type === 'Announcement' && <FiBell />}
+                    {item.type}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 font-bold bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-full">{item.date}</span>
+                </div>
+                
+                <h4 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight font-heading">{item.title}</h4>
+                
+                <p className="text-gray-600 dark:text-gray-300 text-base md:text-lg leading-relaxed whitespace-pre-wrap">{item.desc}</p>
               </div>
-              <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{item.title}</h4>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">{item.desc}</p>
             </motion.div>
           ))}
         </div>

@@ -22,11 +22,33 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || 'Brahmano Ki Sareri Update';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new message from the village.',
-    icon: '/photos/logo.png', // Assuming there's a logo or default icon
-    badge: '/photos/logo.png',
+    icon: '/photos/About.jpeg', // Fixed correct logo path
+    badge: '/photos/About.jpeg',
+    data: {
+      url: payload.fcmOptions?.link || '/'
+    }
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification click to open the app
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });
 
 // Add a dummy fetch listener to satisfy PWA installability requirements
