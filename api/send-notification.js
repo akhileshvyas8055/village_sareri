@@ -1,7 +1,29 @@
-import admin from './_adminInit.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) {
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (privateKey) {
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    privateKey = privateKey.replace(/\\n/g, '\n');
+  }
+
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: privateKey,
+    }),
+  });
+}
 
 export default async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
@@ -25,7 +47,6 @@ export default async function handler(req, res) {
       });
     } catch (dbErr) {
       console.warn('Failed to store notification history:', dbErr);
-      // Continue anyway, sending push is more important
     }
     
     // Fetch all user tokens from Firestore
@@ -42,9 +63,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: 'No registered devices found.' });
     }
 
-    // FCM sendEachForMulticast accepts maximum 500 tokens at a time
     const maxTokens = tokens.slice(0, 500);
-
     const origin = req.headers.origin || 'https://' + req.headers.host;
     
     const payload = {
@@ -70,7 +89,6 @@ export default async function handler(req, res) {
       tokens: maxTokens,
     };
 
-    // Send notifications to all devices
     const response = await admin.messaging().sendEachForMulticast(payload);
     
     return res.status(200).json({ 
