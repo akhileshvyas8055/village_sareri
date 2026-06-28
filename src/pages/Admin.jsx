@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText, FiUserCheck } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText, FiUserCheck, FiClock } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
 import { collection, addDoc } from 'firebase/firestore';
@@ -26,6 +26,13 @@ const Admin = () => {
   const [notifyType, setNotifyType] = useState('News Update');
   const [isSending, setIsSending] = useState(false);
   const [uploadingImageId, setUploadingImageId] = useState(null);
+
+  // Scheduling State
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduleDateTime, setScheduleDateTime] = useState('');
+  const [scheduledTimers, setScheduledTimers] = useState([]);
+  const [countdown, setCountdown] = useState(null);
+  const [countdownInterval, setCountdownInterval] = useState(null);
 
   // Poll State
   const [pollData, setPollData] = useState(null);
@@ -249,21 +256,73 @@ const Admin = () => {
     }
   };
 
+  const getNotifyPrefix = (type) => {
+    if (type === 'Emergency Alert') return '🚨 ';
+    if (type === 'Event Update') return '🎉 ';
+    if (type === 'Festival Announcement') return '🎆 ';
+    if (type === 'Panchayat Notice') return '📜 ';
+    if (type === 'Announcement') return '📣 ';
+    if (type === 'Simple Message') return '💬 ';
+    if (type === 'News') return '📰 ';
+    return '📰 ';
+  };
+
   const handleManualPush = async (e) => {
     e.preventDefault();
     if (!notifyTitle || !notifyBody) return alert('Please enter both title and message.');
     
-    let prefix = '';
-    if (notifyType === 'Emergency Alert') prefix = '🚨 Important Alert: ';
-    else if (notifyType === 'Event Update') prefix = '🎉 Event Update: ';
-    else if (notifyType === 'Festival Announcement') prefix = '🎆 Festival Announcement: ';
-    else if (notifyType === 'Panchayat Notice') prefix = '📜 Panchayat Notice: ';
-    else if (notifyType === 'Announcement') prefix = '📣 Announcement: ';
-    else if (notifyType === 'Simple Message') prefix = '💬 Message: ';
-    else if (notifyType === 'News') prefix = '📰 News: ';
-    else prefix = '📰 Village News: ';
+    const fullTitle = `${getNotifyPrefix(notifyType)}${notifyTitle}`;
 
-    const fullTitle = `${prefix}${notifyTitle}`;
+    if (isScheduled && scheduleDateTime) {
+      const scheduledTime = new Date(scheduleDateTime);
+      const now = new Date();
+      const delay = scheduledTime.getTime() - now.getTime();
+
+      if (delay <= 0) {
+        return alert('Please select a future date and time!');
+      }
+
+      // Start countdown
+      if (countdownInterval) clearInterval(countdownInterval);
+      const interval = setInterval(() => {
+        const remaining = scheduledTime.getTime() - Date.now();
+        if (remaining <= 0) {
+          clearInterval(interval);
+          setCountdown(null);
+          setCountdownInterval(null);
+        } else {
+          const h = Math.floor(remaining / 3600000);
+          const m = Math.floor((remaining % 3600000) / 60000);
+          const s = Math.floor((remaining % 60000) / 1000);
+          setCountdown(`${h}h ${m}m ${s}s`);
+        }
+      }, 1000);
+      setCountdownInterval(interval);
+
+      const timerId = setTimeout(async () => {
+        const success = await sendPushNotification(fullTitle, notifyBody, notifyType, notifyLink);
+        if (success) {
+          alert('⏰ Scheduled notification sent successfully!');
+        }
+        setCountdown(null);
+        setScheduledTimers(prev => prev.filter(t => t.id !== timerId));
+      }, delay);
+
+      setScheduledTimers(prev => [...prev, {
+        id: timerId,
+        title: notifyTitle,
+        body: notifyBody,
+        scheduledTime: scheduledTime.toLocaleString('en-IN'),
+      }]);
+
+      alert(`✅ Notification scheduled for ${scheduledTime.toLocaleString('en-IN')}!\n\n⚠️ Keep this Admin page open until the notification is sent.`);
+      setNotifyTitle('');
+      setNotifyBody('');
+      setNotifyLink('');
+      setScheduleDateTime('');
+      setIsScheduled(false);
+      return;
+    }
     
     const success = await sendPushNotification(fullTitle, notifyBody, notifyType, notifyLink);
     if (success) {
@@ -273,6 +332,15 @@ const Admin = () => {
       setNotifyLink('');
     } else {
       alert('Failed to send notification. Check console for details.');
+    }
+  };
+
+  const cancelScheduledNotification = (timerId) => {
+    clearTimeout(timerId);
+    setScheduledTimers(prev => prev.filter(t => t.id !== timerId));
+    if (scheduledTimers.length <= 1) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      setCountdown(null);
     }
   };
 
@@ -995,21 +1063,80 @@ const Admin = () => {
                   <p className="text-xs text-gray-400 mt-1 text-left">The link that opens when users tap on the notification.</p>
                 </div>
 
+                {/* Schedule Toggle */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FiClock className="w-5 h-5 text-indigo-500" />
+                      <div>
+                        <p className="font-semibold text-gray-700 text-sm">Schedule for Later</p>
+                        <p className="text-xs text-gray-400">Set a specific date & time</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsScheduled(!isScheduled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isScheduled ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${isScheduled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  
+                  {isScheduled && (
+                    <div className="mt-4">
+                      <input
+                        type="datetime-local"
+                        value={scheduleDateTime}
+                        onChange={(e) => setScheduleDateTime(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white font-medium text-gray-800"
+                        required={isScheduled}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="pt-4 border-t border-gray-100">
                   <button 
                     type="submit"
                     disabled={isSending}
-                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/30 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`flex items-center justify-center gap-2 w-full ${isScheduled ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/30' : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/30'} text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <FiSend className="w-5 h-5" />
-                    {isSending ? 'Sending Notification...' : 'Broadcast Notification Now'}
+                    {isScheduled ? <FiClock className="w-5 h-5" /> : <FiSend className="w-5 h-5" />}
+                    {isSending ? 'Sending...' : isScheduled ? 'Schedule Notification' : 'Broadcast Notification Now'}
                   </button>
                   <p className="text-xs text-center text-gray-400 mt-4">
-                    Notifications are dispatched via Firebase Cloud Messaging to all subscribed phones and computers.
+                    {isScheduled ? '⚠️ Keep admin page open until scheduled time.' : 'Notifications are dispatched via Firebase Cloud Messaging.'}
                   </p>
                 </div>
               </form>
             </div>
+
+            {/* Active Scheduled Notifications */}
+            {scheduledTimers.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-2xl mt-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FiClock className="text-amber-500" /> Scheduled Notifications
+                  {countdown && <span className="text-sm font-normal text-amber-600 bg-amber-50 px-3 py-1 rounded-full">⏱️ {countdown}</span>}
+                </h3>
+                <div className="space-y-3">
+                  {scheduledTimers.map((timer) => (
+                    <div key={timer.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <div>
+                        <p className="font-bold text-gray-800 text-sm">{timer.title}</p>
+                        <p className="text-xs text-gray-500">📅 {timer.scheduledTime}</p>
+                      </div>
+                      <button
+                        onClick={() => cancelScheduledNotification(timer.id)}
+                        className="text-red-500 hover:text-red-700 text-sm font-bold bg-white px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
