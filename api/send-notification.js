@@ -84,7 +84,7 @@ async function storeNotificationHistory(accessToken, projectId, title, body, typ
 }
 
 // --- FCM v1 API ---
-async function sendFCMNotification(accessToken, projectId, token, data) {
+async function sendFCMNotification(accessToken, projectId, token, notification, webpush, data) {
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   const res = await fetch(url, {
     method: 'POST',
@@ -95,6 +95,8 @@ async function sendFCMNotification(accessToken, projectId, token, data) {
     body: JSON.stringify({
       message: {
         token,
+        notification,
+        webpush,
         data,
       },
     }),
@@ -135,12 +137,27 @@ export default async function handler(req, res) {
 
     const origin = req.headers.origin || 'https://' + req.headers.host;
 
-    const data = {
+    const notification = {
       title: title.length > 100 ? title.substring(0, 97) + '...' : title,
       body: body,
-      image: `${origin}/photos/About.jpeg`,
-      icon: `${origin}/photos/About.jpeg`,
+      image: `${origin}/logo192.png` // Using image field for FCM v1 native display
+    };
+
+    const webpush = {
+      notification: {
+        icon: `${origin}/logo192.png`,
+        badge: `${origin}/logo192.png`,
+        image: `${origin}/logo192.png`,
+        requireInteraction: true,
+      },
+      fcm_options: {
+        link: link || `${origin}/`,
+      },
+    };
+
+    const data = {
       link: link || `${origin}/`,
+      icon: `${origin}/logo192.png` // Included in data payload for SW interception
     };
 
     // Step 4: Send to each token (FCM v1 API requires one-at-a-time)
@@ -149,7 +166,7 @@ export default async function handler(req, res) {
 
     const sendPromises = tokens.map(async (token) => {
       try {
-        const ok = await sendFCMNotification(accessToken, projectId, token, data);
+        const ok = await sendFCMNotification(accessToken, projectId, token, notification, webpush, data);
         if (ok) successCount++;
         else failureCount++;
       } catch {

@@ -15,24 +15,20 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
-  // Extract data from standard or data-only payload
-  const title = payload.notification?.title || payload.data?.title || 'Village Alert';
-  const body = payload.notification?.body || payload.data?.body || 'New message from the village.';
-  const image = payload.notification?.image || payload.data?.image || '/photos/About.jpeg';
-  const icon = payload.data?.icon || '/photos/About.jpeg';
-  const link = payload.data?.link || payload.fcmOptions?.link || '/';
 
-  const notificationOptions = {
+  // Use the exact format requested by the user
+  const title = payload.notification?.title || payload.data?.title || 'Village Sareri Update';
+  const body = payload.notification?.body || payload.data?.body || 'नई सूचना उपलब्ध है';
+  const icon = payload.notification?.icon || payload.data?.icon || '/logo192.png';
+  
+  self.registration.showNotification(title, {
     body: body,
     icon: icon,
     badge: icon,
-    image: image,
+    image: payload.notification?.image || payload.data?.image,
     requireInteraction: true,
-    data: { url: link }
-  };
-
-  self.registration.showNotification(title, notificationOptions);
+    data: { url: payload.data?.link || payload.fcmOptions?.link || '/' }
+  });
 });
 
 self.addEventListener('notificationclick', function(event) {
