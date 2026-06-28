@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, googleProvider, db } from '../firebase';
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiShield, FiLogOut, FiHome, FiFileText } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
@@ -9,16 +10,36 @@ import SEO from '../components/SEO';
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
 
+  // Save user profile to Firestore whenever they log in
+  const saveUserToFirestore = async (currentUser) => {
+    if (!currentUser) return;
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL,
+        lastSignInTime: new Date().toISOString(),
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Could not save user to Firestore:', err);
+    }
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        saveUserToFirestore(currentUser);
+      }
     });
     return () => unsub();
   }, []);
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      await saveUserToFirestore(result.user);
     } catch (error) {
       console.error(error);
       alert('Login Failed: ' + error.message);

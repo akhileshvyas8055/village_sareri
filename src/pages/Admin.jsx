@@ -43,14 +43,13 @@ const Admin = () => {
       setLoadingUsers(true);
       setErrorUsers(null);
       try {
-        const response = await fetch('/api/get-users');
-        const data = await response.json();
-        if (data.success) {
-          setAppUsers(data.users);
-        } else {
-          console.error(data.error);
-          setErrorUsers(data.message + " : " + (data.error || "Unknown"));
-        }
+        const { collection, getDocs } = await import('firebase/firestore');
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersList = [];
+        usersSnapshot.forEach(doc => {
+          usersList.push(doc.data());
+        });
+        setAppUsers(usersList);
       } catch (error) {
         console.error('Failed to fetch users', error);
         setErrorUsers(error.message);
