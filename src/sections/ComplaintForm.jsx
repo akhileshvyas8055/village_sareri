@@ -17,6 +17,7 @@ const ComplaintForm = () => {
   const [trackIdInput, setTrackIdInput] = useState('');
   const [trackedComplaint, setTrackedComplaint] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
+  const [trackError, setTrackError] = useState('');
   const [user, setUser] = useState(null);
 
   useEffect(() => {
