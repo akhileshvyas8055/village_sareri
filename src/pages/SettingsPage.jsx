@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FiBell, FiDownload, FiSettings, FiCheckCircle, FiInfo } from 'react-icons/fi';
 import { getToken } from 'firebase/messaging';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { messaging, db } from '../firebase';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { messaging, db, auth, googleProvider } from '../firebase';
 import LanguageToggle from '../components/LanguageToggle';
 import { FiGlobe, FiMoon, FiSun } from 'react-icons/fi';
 
@@ -12,8 +13,12 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
   const [notificationStatus, setNotificationStatus] = useState('default');
   const [isStandalone, setIsStandalone] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
     // Check Notification status
     if ('Notification' in window) {
       setNotificationStatus(Notification.permission);
@@ -37,8 +42,18 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      unsub();
     };
   }, []);
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error(error);
+      alert('Login Failed: ' + error.message);
+    }
+  };
 
   const handleEnableNotifications = async () => {
     try {
@@ -101,6 +116,43 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
         </div>
 
         <div className="space-y-6">
+          {/* User Profile Section */}
+          <div className="bg-white dark:bg-darkCard rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">My Profile</h2>
+            {user ? (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <img src={user.photoURL || 'https://via.placeholder.com/60'} alt="Profile" className="w-16 h-16 rounded-full border-2 border-saffron" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{user.displayName}</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</p>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full mt-1"><FiCheckCircle /> Verified</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => signOut(auth)}
+                  className="px-6 py-2 border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition-colors w-full sm:w-auto"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">You are not logged in.</p>
+                  <p className="text-xs text-gray-500">Login to submit genuine complaints and verify your identity.</p>
+                </div>
+                <button 
+                  onClick={handleLogin}
+                  className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-white font-bold rounded-xl shadow-sm hover:border-saffron transition-colors w-full sm:w-auto"
+                >
+                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+                  Continue with Google
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Language Preference Section */}
           <div className="bg-white dark:bg-darkCard rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
             <div className="flex items-start gap-4">

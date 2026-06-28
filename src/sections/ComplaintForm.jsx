@@ -226,10 +226,10 @@ const ComplaintForm = () => {
                     To prevent spam and ensure genuine complaints, please create or log into your verified village profile.
                   </p>
                   <Link 
-                    to="/profile"
+                    to="/settings"
                     className="bg-saffron text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 flex items-center justify-center gap-2 mx-auto transition-all w-full max-w-xs"
                   >
-                    Go to Profile Page
+                    Go to Settings to Login
                   </Link>
                 </div>
               ) : (
