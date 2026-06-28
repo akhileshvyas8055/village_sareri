@@ -35,19 +35,25 @@ const Admin = () => {
   // Users State
   const [appUsers, setAppUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [errorUsers, setErrorUsers] = useState(null);
 
   // Load from Firestore with real-time sync
   useEffect(() => {
     const fetchUsers = async () => {
       setLoadingUsers(true);
+      setErrorUsers(null);
       try {
         const response = await fetch('/api/get-users');
         const data = await response.json();
         if (data.success) {
           setAppUsers(data.users);
+        } else {
+          console.error(data.error);
+          setErrorUsers(data.message + " : " + (data.error || "Unknown"));
         }
       } catch (error) {
         console.error('Failed to fetch users', error);
+        setErrorUsers(error.message);
       }
       setLoadingUsers(false);
     };
@@ -648,6 +654,12 @@ const Admin = () => {
             {loadingUsers ? (
               <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron"></div>
+              </div>
+            ) : errorUsers ? (
+              <div className="text-center py-10 bg-red-50 rounded-xl shadow-sm border border-red-200 text-red-600">
+                <p className="font-bold">Error loading users:</p>
+                <p className="text-sm mt-2">{errorUsers}</p>
+                <button onClick={() => window.location.reload()} className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg text-sm">Retry</button>
               </div>
             ) : appUsers.length === 0 ? (
               <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500">
