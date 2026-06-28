@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiShield, FiLogOut } from 'react-icons/fi';
+import { FiUser, FiMail, FiShield, FiLogOut, FiHome, FiFileText } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 
 const ProfilePage = () => {
@@ -56,6 +57,21 @@ const ProfilePage = () => {
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
                   You are a verified user. You can now use all features of the website, including registering complaints directly with the Panchayat.
                 </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <Link 
+                  to="/"
+                  className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <FiHome /> Home
+                </Link>
+                <Link 
+                  to="/complaint"
+                  className="flex-1 flex items-center justify-center gap-2 bg-saffron text-white font-bold py-3 px-4 rounded-xl hover:bg-orange-600 transition-colors"
+                >
+                  <FiFileText /> Complaint
+                </Link>
               </div>
 
               <button 
