@@ -102,16 +102,6 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
                   {item.isVideo && <p className="text-gray-300 text-[10px] md:text-xs mt-1 uppercase tracking-widest">Video</p>}
                 </div>
                 
-                {/* Play button overlay for videos */}
-                {item.isVideo && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-10 h-10 md:w-16 md:h-16 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <svg className="w-4 h-4 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
               </motion.div>
             ))}
           </div>

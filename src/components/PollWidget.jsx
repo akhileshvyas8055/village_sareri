@@ -87,7 +87,7 @@ const PollWidget = () => {
   const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
 
   return (
-    <section id="poll" className="py-12 bg-white dark:bg-darkCard transition-colors">
+    <section id="poll" className="py-12 bg-white dark:bg-darkCard transition-colors notranslate">
       <div className="container mx-auto px-4 md:px-8 max-w-3xl">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
