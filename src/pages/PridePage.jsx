@@ -30,6 +30,7 @@ const PridePage = () => {
       case 'Social Work': return <FaHandsHelping />;
       case 'Panchayat': return <FaLandmark />;
       case 'Military/Police': return <FaShieldAlt />;
+      case 'Sareri Shyam Khel Mahotsav': return <FaTrophy />;
       default: return <FaStar />;
     }
   };
@@ -158,7 +159,10 @@ const PridePage = () => {
                           {item.year}
                         </span>
                       )}
-                      <span className="inline-block bg-white/10 text-gray-300 px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold border border-white/15 backdrop-blur-md">
+                      <span 
+                        className={`inline-block bg-white/10 text-gray-300 px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold border border-white/15 backdrop-blur-md ${item.category === 'Sareri Shyam Khel Mahotsav' ? 'notranslate' : ''}`}
+                        translate={item.category === 'Sareri Shyam Khel Mahotsav' ? 'no' : undefined}
+                      >
                         {item.category}
                       </span>
                     </div>

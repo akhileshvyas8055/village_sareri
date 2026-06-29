@@ -80,7 +80,7 @@ const ManageAchievements = () => {
     }
   };
 
-  const categories = ['Education', 'Sports', 'Social Work', 'Panchayat', 'Military/Police', 'Other'];
+  const categories = ['Education', 'Sports', 'Social Work', 'Panchayat', 'Military/Police', 'Sareri Shyam Khel Mahotsav', 'Other'];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
