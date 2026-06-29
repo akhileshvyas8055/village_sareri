@@ -63,12 +63,9 @@ const CountdownWidget = () => {
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-yellow-300/20 rounded-full blur-2xl"></div>
 
         <div className="relative z-10">
-          <h2 className="text-2xl md:text-4xl font-bold font-heading text-white mb-2 drop-shadow-md">
+          <h2 className="text-2xl md:text-4xl font-bold font-heading text-white mb-8 drop-shadow-md">
             {countdownData.title}
           </h2>
-          <p className="text-orange-100 font-medium mb-8">
-            {isExpired ? 'The event has started!' : 'Starting soon, get ready!'}
-          </p>
 
           {!isExpired && (
             <div className="flex flex-wrap justify-center gap-4 md:gap-8">
