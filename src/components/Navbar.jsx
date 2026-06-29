@@ -18,6 +18,7 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
     { name: t('About'), href: '/about' },
     { name: t('Gallery'), href: '/gallery' },
     { name: t('Community'), href: '/community' },
+    { name: t('Pride of Sareri'), href: '/pride' },
     { name: t('News'), href: '/news' },
     { name: t('Complaint'), href: '/complaint' },
     { name: t('Khel Utsav'), href: '/khel-registration' },

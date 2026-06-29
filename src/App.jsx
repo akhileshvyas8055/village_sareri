@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import AboutPage from './pages/AboutPage';
 import GalleryPage from './pages/GalleryPage';
 import CommunityPage from './pages/CommunityPage';
+import PridePage from './pages/PridePage';
 import NewsPage from './pages/NewsPage';
 import RegistrationPage from './pages/RegistrationPage';
 import NotificationPopup from './components/NotificationPopup';
@@ -91,6 +92,7 @@ function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/community" element={<CommunityPage />} />
+                  <Route path="/pride" element={<PridePage />} />
                   <Route path="/news" element={<NewsPage />} />
                   <Route path="/complaint" element={<ComplaintPage />} />
                   <Route path="/khel-registration" element={<RegistrationPage />} />
