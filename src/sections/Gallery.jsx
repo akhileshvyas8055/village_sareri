@@ -40,6 +40,28 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
 
   const images = [...localImages, ...formattedExternal];
 
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    if (!selectedMedia) return;
+    const currentIndex = images.findIndex(img => img.id === selectedMedia.id);
+    if (currentIndex > 0) {
+      setSelectedMedia(images[currentIndex - 1]);
+    } else {
+      setSelectedMedia(images[images.length - 1]);
+    }
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    if (!selectedMedia) return;
+    const currentIndex = images.findIndex(img => img.id === selectedMedia.id);
+    if (currentIndex < images.length - 1) {
+      setSelectedMedia(images[currentIndex + 1]);
+    } else {
+      setSelectedMedia(images[0]);
+    }
+  };
+
   return (
     <section className="py-12 bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="container mx-auto px-4 md:px-8">
@@ -120,40 +142,62 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8"
             onClick={() => setSelectedMedia(null)}
           >
-            {/* Close Button */}
-            <button
-              onClick={() => setSelectedMedia(null)}
-              className="absolute top-20 right-4 md:top-8 md:right-8 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all z-50"
-            >
-              <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
+            {/* Navigation Arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrev}
+                  className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 md:p-3 transition-all z-50"
+                >
+                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                  </svg>
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 md:p-3 transition-all z-50"
+                >
+                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </button>
+              </>
+            )}
 
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative max-w-7xl w-full max-h-[90vh] flex flex-col items-center justify-center"
+              className="relative max-w-7xl max-h-[90vh] flex flex-col items-center justify-center border-2 md:border-4 border-saffron rounded-lg bg-black"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Close Button on the border */}
+              <button
+                onClick={() => setSelectedMedia(null)}
+                className="absolute -top-4 -right-4 md:-top-5 md:-right-5 text-white bg-saffron hover:bg-orange-600 border-2 border-white rounded-full p-1.5 md:p-2 transition-all z-50 shadow-xl"
+              >
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+
               {selectedMedia.isVideo ? (
                 <video 
                   src={selectedMedia.src} 
                   autoPlay 
                   controls 
-                  className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                  className="w-full h-auto max-h-[85vh] object-contain rounded-sm"
                 />
               ) : (
                 <img 
                   src={selectedMedia.src} 
                   alt={selectedMedia.title}
                   referrerPolicy="no-referrer"
-                  className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                  className="w-full h-auto max-h-[85vh] object-contain rounded-sm"
                 />
               )}
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-center rounded-b-lg pointer-events-none">
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent text-center rounded-b-lg pointer-events-none">
                 <h3 className="text-white text-lg md:text-2xl font-bold">{selectedMedia.title}</h3>
                 <p className="text-gray-300 text-sm md:text-base mt-1">{selectedMedia.desc}</p>
               </div>
