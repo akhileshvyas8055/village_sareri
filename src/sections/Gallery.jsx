@@ -123,7 +123,7 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
             {/* Close Button */}
             <button
               onClick={() => setSelectedMedia(null)}
-              className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all z-50"
+              className="absolute top-20 right-4 md:top-8 md:right-8 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all z-50"
             >
               <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
