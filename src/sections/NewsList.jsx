@@ -25,7 +25,7 @@ const NewsList = () => {
   }, []);
 
   return (
-    <section className="py-24 bg-white dark:bg-darkCard transition-colors min-h-screen">
+    <section className="py-24 bg-white dark:bg-darkCard transition-colors min-h-screen notranslate">
       <div className="container mx-auto px-4 md:px-8 max-w-4xl">
         <div className="mb-10 text-center md:text-left">
           <motion.h2 
