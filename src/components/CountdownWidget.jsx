@@ -25,7 +25,9 @@ const CountdownWidget = () => {
     if (!countdownData || !countdownData.targetDate) return;
 
     const timer = setInterval(() => {
-      const targetTime = new Date(countdownData.targetDate).getTime();
+      // iOS Safari safe date parsing
+      const safeDateStr = countdownData.targetDate.replace(/-/g, '/').replace('T', ' ');
+      const targetTime = new Date(safeDateStr).getTime();
       const currentTime = new Date().getTime();
       const difference = targetTime - currentTime;
 

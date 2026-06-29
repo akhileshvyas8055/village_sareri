@@ -39,7 +39,7 @@ function App() {
     // Foreground notification listener
     if (messaging) {
       const unsub = onMessage(messaging, (payload) => {
-        if (Notification.permission === 'granted') {
+        if ('Notification' in window && Notification.permission === 'granted') {
           const title = payload.notification?.title || payload.data?.title || 'Village Alert';
           const options = {
             body: payload.notification?.body || payload.data?.body,

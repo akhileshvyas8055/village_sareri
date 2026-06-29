@@ -15,7 +15,7 @@ const NotificationPopup = () => {
   useEffect(() => {
     // Check if we already asked
     const hasAsked = localStorage.getItem('sareri_notification_asked');
-    if (!hasAsked && Notification.permission === 'default') {
+    if (!hasAsked && 'Notification' in window && Notification.permission === 'default') {
       // Small delay before showing so it doesn't interrupt initial page load
       const timer = setTimeout(() => setShow(true), 3000);
       return () => clearTimeout(timer);
@@ -27,6 +27,10 @@ const NotificationPopup = () => {
     localStorage.setItem('sareri_notification_asked', 'true');
 
     try {
+      if (!('Notification' in window)) {
+        console.warn('This browser does not support desktop notification');
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission === 'granted' && messaging) {
         // We attempt to get the token. 
