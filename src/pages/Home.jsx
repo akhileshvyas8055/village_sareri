@@ -5,6 +5,7 @@ import WeatherCard from '../components/WeatherCard';
 import PollWidget from '../components/PollWidget';
 import VirtualTourBanner from '../components/VirtualTourBanner';
 import SEO from '../components/SEO';
+import CountdownWidget from '../components/CountdownWidget';
 
 const Home = () => {
   return (
@@ -21,6 +22,7 @@ const Home = () => {
         <WeatherCard />
       </div>
 
+      <CountdownWidget />
       <KhelBanner />
       <PollWidget />
       <Highlights />

@@ -8,6 +8,7 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebas
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, rtdb, storage } from '../firebase';
 import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
+import ManageCountdown from '../components/Admin/ManageCountdown';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -609,6 +610,9 @@ const Admin = () => {
           <button onClick={() => setActiveTab('poll')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
             <FiPieChart className={`w-5 h-5 ${activeTab === 'poll' ? 'text-purple-600' : 'text-gray-400'}`} /> Manage Poll
           </button>
+          <button onClick={() => setActiveTab('countdown')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'countdown' ? 'bg-yellow-50 text-yellow-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiClock className={`w-5 h-5 ${activeTab === 'countdown' ? 'text-yellow-600' : 'text-gray-400'}`} /> Manage Countdown
+          </button>
         </nav>
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
           <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-gray-600 hover:text-white hover:bg-red-500 w-full py-2.5 rounded-lg transition-all font-bold text-sm shadow-sm border border-gray-200 hover:border-red-500">
@@ -689,6 +693,9 @@ const Admin = () => {
                 </button>
                 <button onClick={() => {setActiveTab('poll'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
                   <FiPieChart className="w-5 h-5" /> Manage Poll
+                </button>
+                <button onClick={() => {setActiveTab('countdown'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'countdown' ? 'bg-yellow-50 text-yellow-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiClock className="w-5 h-5" /> Manage Countdown
                 </button>
               </nav>
               <div className="p-4 border-t border-gray-100">
@@ -1244,6 +1251,13 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'countdown' && (
+          <div className="mb-10">
+            <ManageCountdown />
+          </div>
+        )}
+
           </div>
         </main>
       </div>
