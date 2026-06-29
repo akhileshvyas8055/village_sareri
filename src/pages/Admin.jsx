@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText, FiUserCheck, FiClock } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText, FiUserCheck, FiClock, FiAward } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
 import { collection, addDoc } from 'firebase/firestore';
@@ -9,6 +9,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, rtdb, storage } from '../firebase';
 import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
 import ManageCountdown from '../components/Admin/ManageCountdown';
+import ManageAchievements from '../components/Admin/ManageAchievements';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -613,6 +614,9 @@ const Admin = () => {
           <button onClick={() => setActiveTab('countdown')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'countdown' ? 'bg-yellow-50 text-yellow-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
             <FiClock className={`w-5 h-5 ${activeTab === 'countdown' ? 'text-yellow-600' : 'text-gray-400'}`} /> Manage Countdown
           </button>
+          <button onClick={() => setActiveTab('achievements')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiAward className={`w-5 h-5 ${activeTab === 'achievements' ? 'text-pink-600' : 'text-gray-400'}`} /> Pride of Sareri
+          </button>
         </nav>
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
           <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-gray-600 hover:text-white hover:bg-red-500 w-full py-2.5 rounded-lg transition-all font-bold text-sm shadow-sm border border-gray-200 hover:border-red-500">
@@ -696,6 +700,9 @@ const Admin = () => {
                 </button>
                 <button onClick={() => {setActiveTab('countdown'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'countdown' ? 'bg-yellow-50 text-yellow-600' : 'text-gray-600 hover:bg-gray-50'}`}>
                   <FiClock className="w-5 h-5" /> Manage Countdown
+                </button>
+                <button onClick={() => {setActiveTab('achievements'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiAward className="w-5 h-5" /> Pride of Sareri
                 </button>
               </nav>
               <div className="p-4 border-t border-gray-100">
@@ -1255,6 +1262,12 @@ const Admin = () => {
         {activeTab === 'countdown' && (
           <div className="mb-10">
             <ManageCountdown />
+          </div>
+        )}
+
+        {activeTab === 'achievements' && (
+          <div className="mb-10">
+            <ManageAchievements />
           </div>
         )}
 

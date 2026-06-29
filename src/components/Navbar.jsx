@@ -54,9 +54,9 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
               <li key={link.name}>
                 <Link 
                   to={link.href} 
-                  className={`font-medium transition-colors hover:text-saffron ${showSolidNav ? 'text-gray-700 dark:text-gray-300' : 'text-white drop-shadow-md hover:text-gray-200'} ${link.name === 'Khel Utsav' || link.name === 'खेल उत्सव' ? 'notranslate' : ''}`}
+                  className={`font-medium transition-colors hover:text-saffron ${showSolidNav ? 'text-gray-700 dark:text-gray-300' : 'text-white drop-shadow-md hover:text-gray-200'}`}
                 >
-                  {link.name}
+                  <span className="notranslate" translate="no">{link.name}</span>
                 </Link>
               </li>
             ))}
@@ -99,9 +99,9 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
                   <Link 
                     to={link.href} 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`block text-lg font-medium text-gray-800 dark:text-gray-200 hover:text-saffron dark:hover:text-saffron ${link.name === 'Khel Utsav' || link.name === 'खेल उत्सव' ? 'notranslate' : ''}`}
+                    className="block text-lg font-medium text-gray-800 dark:text-gray-200 hover:text-saffron dark:hover:text-saffron"
                   >
-                    {link.name}
+                    <span className="notranslate" translate="no">{link.name}</span>
                   </Link>
                 </li>
               ))}

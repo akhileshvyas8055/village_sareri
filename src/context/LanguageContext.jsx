@@ -10,7 +10,7 @@ const translations = {
   'About': { hi: 'हमारे बारे में', en: 'About' },
   'Gallery': { hi: 'गैलरी', en: 'Gallery' },
   'Community': { hi: 'समुदाय', en: 'Community' },
-  'Pride of Sareri': { hi: 'सरेरी का गौरव', en: 'Pride of Sareri' },
+  'Pride of Sareri': { hi: 'Pride of Sareri', en: 'Pride of Sareri' },
   'News & Complaints': { hi: 'समाचार और शिकायत', en: 'News & Complaints' },
   'News': { hi: 'समाचार', en: 'News' },
   'Complaint': { hi: 'शिकायत', en: 'Complaint' },
