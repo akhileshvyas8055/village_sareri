@@ -1,6 +1,9 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const Gallery = ({ title = "Village Gallery", folder = "slideshow", description = "Beautiful moments from Brahmano Ki Sareri." }) => {
+const Gallery = ({ title = "Village Gallery", folder = "slideshow", description = "Beautiful moments from Brahmano Ki Sareri.", externalLinks = [] }) => {
+  const [selectedMedia, setSelectedMedia] = useState(null);
+
   const encodeMediaUrl = (rawPath) => {
     if (!rawPath) return '';
     const parts = rawPath.split('/');
@@ -11,20 +14,31 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
   // Dynamically load all media files from all subdirectories, then filter by the provided folder
   const rawFiles = import.meta.glob('/public/photos/**/*.{jpg,jpeg,png,mp4,MOV,webm}', { eager: false });
   
-  const images = Object.keys(rawFiles)
+  const localImages = Object.keys(rawFiles)
     .filter(path => path.includes(`/public/photos/${folder}/`))
     .map((path, index) => {
       const rawSrc = path.replace('/public', '');
       const src = encodeMediaUrl(rawSrc);
       const isVideo = src.match(/\.(mp4|MOV|webm)$/i);
       return {
-        id: index + 1,
+        id: `local-${index}`,
         src: src,
         isVideo: !!isVideo,
         title: isVideo ? `${title} (Video)` : title,
         desc: description
       };
     });
+
+  // Map external links to the same format
+  const formattedExternal = externalLinks.map((link, index) => ({
+    id: `ext-${index}`,
+    src: link.src,
+    isVideo: link.isVideo || false,
+    title: link.title || title,
+    desc: link.desc || description
+  }));
+
+  const images = [...localImages, ...formattedExternal];
 
   return (
     <section className="py-12 bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -50,7 +64,7 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
         </div>
 
         {images.length > 0 ? (
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-2 md:gap-6">
             {images.map((item, index) => (
               <motion.div
                 key={item.id}
@@ -58,32 +72,44 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="relative rounded-2xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group border border-gray-200/50 dark:border-gray-800/50 bg-gray-100 dark:bg-darkCard break-inside-avoid"
+                onClick={() => setSelectedMedia(item)}
+                className="relative rounded-xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group border border-gray-200/50 dark:border-gray-800/50 bg-gray-200 dark:bg-gray-800 flex items-center justify-center cursor-pointer"
               >
                 {item.isVideo ? (
                   <video 
                     src={item.src} 
-                    autoPlay 
-                    loop 
                     muted 
                     playsInline
-                    controls
-                    className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    preload="metadata"
+                    className="w-full h-32 sm:h-48 md:h-80 object-cover md:object-contain transform transition-transform duration-700 group-hover:scale-105 pointer-events-none"
                   />
                 ) : (
                   <img 
                     src={item.src} 
                     alt={item.title}
                     loading="lazy"
-                    className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-32 sm:h-48 md:h-80 object-cover md:object-contain transform transition-transform duration-700 group-hover:scale-105"
                   />
                 )}
 
                 {/* Stylish Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 md:p-6 pointer-events-none">
-                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-md">{item.title}</h3>
-                  {item.isVideo && <p className="text-gray-300 text-xs mt-1 uppercase tracking-widest">Video</p>}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2 md:p-6 pointer-events-none">
+                  <h3 className="text-white font-bold text-sm md:text-xl drop-shadow-md">{item.title}</h3>
+                  {item.isVideo && <p className="text-gray-300 text-[10px] md:text-xs mt-1 uppercase tracking-widest">Video</p>}
                 </div>
+                
+                {/* Play button overlay for videos */}
+                {item.isVideo && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-10 h-10 md:w-16 md:h-16 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                      <svg className="w-4 h-4 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
@@ -91,6 +117,58 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
           <p className="text-center text-gray-500 py-12 bg-white dark:bg-darkCard rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">No media uploaded yet for this event.</p>
         )}
       </div>
+
+      {/* Modal for Zoomed View */}
+      <AnimatePresence>
+        {selectedMedia && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8"
+            onClick={() => setSelectedMedia(null)}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedMedia(null)}
+              className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all z-50"
+            >
+              <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative max-w-7xl w-full max-h-[90vh] flex flex-col items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {selectedMedia.isVideo ? (
+                <video 
+                  src={selectedMedia.src} 
+                  autoPlay 
+                  controls 
+                  className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                />
+              ) : (
+                <img 
+                  src={selectedMedia.src} 
+                  alt={selectedMedia.title}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                />
+              )}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-center rounded-b-lg pointer-events-none">
+                <h3 className="text-white text-lg md:text-2xl font-bold">{selectedMedia.title}</h3>
+                <p className="text-gray-300 text-sm md:text-base mt-1">{selectedMedia.desc}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };

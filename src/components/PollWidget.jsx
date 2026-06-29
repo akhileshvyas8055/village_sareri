@@ -30,6 +30,18 @@ const PollWidget = () => {
     return () => unsub();
   }, []);
 
+  // Scroll to poll if URL contains #poll hash
+  useEffect(() => {
+    if (poll && window.location.hash === '#poll') {
+      setTimeout(() => {
+        const element = document.getElementById('poll');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 500);
+    }
+  }, [poll]);
+
   const handleVote = async () => {
     if (selectedOption === null || hasVoted || isSubmitting || !poll) return;
     

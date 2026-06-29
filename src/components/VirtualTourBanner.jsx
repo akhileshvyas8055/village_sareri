@@ -1,15 +1,40 @@
 import React, { useState } from 'react';
-import { FiMap, FiX } from 'react-icons/fi';
+import { FiMap, FiX, FiMapPin } from 'react-icons/fi';
 
 const VirtualTourBanner = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Default to Main Village
+  const defaultSrc = "https://www.google.com/maps/embed?pb=!4v1782711561627!6m8!1m7!1ssYXpQiOgY9DPDkHfSY5RYg!2m2!1d25.62409714012885!2d74.44149223641581!3f27.6283532161044!4f-5.916395113283301!5f0.4000000000000002";
+  const [currentEmbedSrc, setCurrentEmbedSrc] = useState(defaultSrc);
+  const [currentLocationName, setCurrentLocationName] = useState("Main Village");
+
+  const mainVillage = {
+    name: "Main Village",
+    icon: "🏘️",
+    src: "https://www.google.com/maps/embed?pb=!4v1782711561627!6m8!1m7!1ssYXpQiOgY9DPDkHfSY5RYg!2m2!1d25.62409714012885!2d74.44149223641581!3f27.6283532161044!4f-5.916395113283301!5f0.4000000000000002"
+  };
+
+  const charbhujaMandir = {
+    name: "Charbhuja Mandir (Bada Mandir)",
+    icon: "🕉️",
+    src: "https://www.google.com/maps/embed?pb=!4v1782711810307!6m8!1m7!1s-ZD6OETEtNmlSn9uny_nSg!2m2!1d25.6209912854777!2d74.44209540525893!3f115.47569655507692!4f9.925000980193957!5f0.7820865974627469"
+  };
+
+  const tourLocations = [mainVillage, charbhujaMandir];
+
+  const openTour = (location) => {
+    setCurrentEmbedSrc(location.src);
+    setCurrentLocationName(location.name);
+    setIsModalOpen(true);
+  };
 
   return (
     <>
     <div className="container mx-auto px-4 my-20">
       <div 
         className="relative w-full overflow-hidden rounded-[2rem] shadow-2xl group cursor-pointer border border-white/20 hover:border-saffron/50 transition-all duration-700 hover:shadow-[0_20px_60px_rgba(255,107,0,0.25)]"
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => openTour(tourLocations[0])}
       >
         {/* Background Image with Zoom Effect */}
         <div 
@@ -56,12 +81,30 @@ const VirtualTourBanner = () => {
             <div className="absolute -inset-4 bg-gradient-to-r from-saffron via-orange-600 to-yellow-500 rounded-full blur-xl opacity-50 group-hover:opacity-80 transition duration-700 animate-pulse"></div>
             <button 
               className="relative px-8 py-5 md:px-10 md:py-6 bg-gradient-to-r from-orange-600 to-saffron text-white font-extrabold rounded-full text-xl shadow-2xl transition-all transform hover:scale-110 flex items-center gap-3 border-2 border-white/20 hover:border-white/50 backdrop-blur-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                openTour(tourLocations[0]);
+              }}
             >
               <FiMap className="w-7 h-7 animate-bounce" />
               <span className="tracking-wide">Abhi Dekho ✨</span>
             </button>
           </div>
         </div>
+      </div>
+      
+      {/* Quick Jump Buttons */}
+      <div className="mt-6 flex flex-wrap gap-4 justify-center">
+        {[charbhujaMandir].map((loc, idx) => (
+          <button
+            key={idx}
+            onClick={() => openTour(loc)}
+            className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border-2 border-saffron/20 hover:border-saffron hover:bg-orange-50 dark:hover:bg-orange-900/20 text-gray-800 dark:text-gray-200 font-bold rounded-xl shadow-md transition-all transform hover:-translate-y-1"
+          >
+            <span className="text-2xl">{loc.icon}</span>
+            <span>{loc.name}</span>
+          </button>
+        ))}
       </div>
     </div>
 
@@ -74,7 +117,7 @@ const VirtualTourBanner = () => {
             <div className="flex justify-between items-center p-4 bg-gradient-to-r from-[#1A5C2A] to-green-800 text-white shadow-md z-10">
               <div className="flex items-center gap-3">
                 <FiMap className="w-5 h-5 text-saffron animate-pulse" />
-                <span className="truncate notranslate">Brahmano Ki Sareri - 360° Street View</span>
+                <span className="truncate notranslate">Brahmano Ki Sareri - {currentLocationName}</span>
               </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsModalOpen(false); }}
@@ -85,13 +128,32 @@ const VirtualTourBanner = () => {
               </button>
             </div>
             
+            {/* Modal Quick Select (Optional, but good for switching while inside) */}
+            <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex overflow-x-auto">
+              {tourLocations.map((loc, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => openTour(loc)}
+                  className={`flex-shrink-0 px-6 py-3 font-semibold transition-colors flex items-center gap-2 ${
+                    currentLocationName === loc.name 
+                      ? 'bg-saffron text-white' 
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span>{loc.icon}</span>
+                  <span>{loc.name}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Map iframe */}
             <div className="flex-1 w-full bg-gray-200 relative">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-10 h-10 border-4 border-saffron border-t-transparent rounded-full animate-spin"></div>
               </div>
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!4v1782549017971!6m8!1m7!1s01dyTSu2-GDgGXvcXlWP6w!2m2!1d25.62278654251179!2d74.44466942732011!3f90!4f0!5f0.7820865974627469" 
+                key={currentEmbedSrc} // Force iframe reload when src changes
+                src={currentEmbedSrc} 
                 width="100%" 
                 height="100%" 
                 style={{ border: 0 }} 
@@ -99,7 +161,7 @@ const VirtualTourBanner = () => {
                 loading="lazy" 
                 referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full relative z-10"
-                title="Sareri Village 360° Street View"
+                title={`Sareri Village 360° Street View - ${currentLocationName}`}
               ></iframe>
             </div>
           </div>
@@ -110,3 +172,4 @@ const VirtualTourBanner = () => {
 };
 
 export default VirtualTourBanner;
+
