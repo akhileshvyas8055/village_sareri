@@ -85,7 +85,7 @@ const ManageAchievements = () => {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 notranslate">
+        <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 notranslate" translate="no">
           <FiAward className="text-yellow-500" />
           Manage Pride of Sareri
         </h2>

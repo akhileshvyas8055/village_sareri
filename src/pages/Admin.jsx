@@ -615,7 +615,7 @@ const Admin = () => {
             <FiClock className={`w-5 h-5 ${activeTab === 'countdown' ? 'text-yellow-600' : 'text-gray-400'}`} /> Manage Countdown
           </button>
           <button onClick={() => setActiveTab('achievements')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiAward className={`w-5 h-5 ${activeTab === 'achievements' ? 'text-pink-600' : 'text-gray-400'}`} /> Pride of Sareri
+            <FiAward className={`w-5 h-5 ${activeTab === 'achievements' ? 'text-pink-600' : 'text-gray-400'}`} /> <span className="notranslate" translate="no">Pride of Sareri</span>
           </button>
         </nav>
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
@@ -702,7 +702,7 @@ const Admin = () => {
                   <FiClock className="w-5 h-5" /> Manage Countdown
                 </button>
                 <button onClick={() => {setActiveTab('achievements'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiAward className="w-5 h-5" /> Pride of Sareri
+                  <FiAward className="w-5 h-5" /> <span className="notranslate" translate="no">Pride of Sareri</span>
                 </button>
               </nav>
               <div className="p-4 border-t border-gray-100">
