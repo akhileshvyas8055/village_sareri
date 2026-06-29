@@ -48,6 +48,7 @@ function App() {
             icon: payload.notification?.icon || '/photos/About.jpeg',
             image: payload.notification?.image || '/photos/About.jpeg',
             requireInteraction: true,
+            tag: payload.messageId || title, // Deduplicate notifications across multiple tabs
             data: { url: payload.data?.link || '/' }
           };
           

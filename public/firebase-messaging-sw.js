@@ -15,20 +15,8 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-
-  // Use the exact format requested by the user
-  const title = payload.notification?.title || payload.data?.title || 'Village Sareri Update';
-  const body = payload.notification?.body || payload.data?.body || 'नई सूचना उपलब्ध है';
-  const icon = payload.notification?.icon || payload.data?.icon || '/photos/About.jpeg';
-  
-  self.registration.showNotification(title, {
-    body: body,
-    icon: icon,
-    badge: icon,
-    image: payload.notification?.image || payload.data?.image,
-    requireInteraction: true,
-    data: { url: payload.data?.link || payload.fcmOptions?.link || '/' }
-  });
+  // FCM automatically displays the notification if payload.notification is present.
+  // We do not call self.registration.showNotification() here to avoid duplicates.
 });
 
 self.addEventListener('notificationclick', function(event) {
