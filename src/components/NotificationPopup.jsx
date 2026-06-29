@@ -80,24 +80,25 @@ const NotificationPopup = () => {
                 <FiBell className="w-6 h-6" />
               </div>
               
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">Village Alerts</h3>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">गाँव की हर खबर सबसे पहले!</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                  Stay updated with village news, events, announcements and important alerts. Allow notifications?
+                  गाँव की ज़रूरी सूचनाएं, न्यूज़ और इवेंट्स सीधे अपने फोन पर पाने के लिए नोटिफिकेशन चालू करें।
                 </p>
                 
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-2">
                   <button 
                     onClick={handleAllow}
-                    className="flex-1 bg-saffron hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors shadow-md shadow-saffron/30"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl text-base transition-all shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 animate-pulse hover:animate-none"
                   >
-                    Allow
+                    <FiBell className="w-5 h-5" />
+                    चालू करें (Allow)
                   </button>
                   <button 
                     onClick={handleNotNow}
-                    className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-2 px-4 rounded-xl text-sm transition-colors"
+                    className="w-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium py-2 rounded-xl text-xs transition-colors"
                   >
-                    Not Now
+                    बाद में (Not Now)
                   </button>
                 </div>
               </div>
