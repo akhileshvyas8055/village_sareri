@@ -561,7 +561,7 @@ const Admin = () => {
             Login
           </button>
           <div className="mt-4 text-center">
-            <Link text-sm text-gray-500 hover:text-saffron to="/">Go back to Home</Link>
+            <Link className="text-sm text-gray-500 hover:text-saffron" to="/">Go back to Home</Link>
           </div>
         </form>
       </div>

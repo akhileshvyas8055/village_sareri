@@ -4,25 +4,27 @@ import { messaging } from './firebase';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingAudioButton from './components/FloatingAudioButton';
-import Home from './pages/Home';
-import AboutPage from './pages/AboutPage';
-import GalleryPage from './pages/GalleryPage';
-import CommunityPage from './pages/CommunityPage';
-import PridePage from './pages/PridePage';
-import NewsPage from './pages/NewsPage';
-import RegistrationPage from './pages/RegistrationPage';
+import { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import NotificationPopup from './components/NotificationPopup';
-import PanchayatPage from './pages/Panchayat';
-import SEO from './components/SEO';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MobileBottomNav from './components/MobileBottomNav';
-import ComplaintPage from './pages/ComplaintPage';
-import SettingsPage from './pages/SettingsPage';
-import ProfilePage from './pages/ProfilePage';
 import LanguagePromptPopup from './components/LanguagePromptPopup';
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Admin from './pages/Admin';
+// Lazy load pages for fast initial render
+const Home = lazy(() => import('./pages/Home'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const GalleryPage = lazy(() => import('./pages/GalleryPage'));
+const CommunityPage = lazy(() => import('./pages/CommunityPage'));
+const PridePage = lazy(() => import('./pages/PridePage'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
+const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
+const PanchayatPage = lazy(() => import('./pages/Panchayat'));
+const ComplaintPage = lazy(() => import('./pages/ComplaintPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 import { AdminContext } from './dataStore';
 
@@ -81,35 +83,37 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
-        <Routes>
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/*" element={
-            <>
-              <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-              <main className="flex-grow pb-16 md:pb-0">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/gallery" element={<GalleryPage />} />
-                  <Route path="/community" element={<CommunityPage />} />
-                  <Route path="/pride" element={<PridePage />} />
-                  <Route path="/news" element={<NewsPage />} />
-                  <Route path="/complaint" element={<ComplaintPage />} />
-                  <Route path="/khel-registration" element={<RegistrationPage />} />
-                  <Route path="/panchayat" element={<PanchayatPage />} />
-                  <Route path="/settings" element={<SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                </Routes>
-              </main>
-              <Footer />
-              <NotificationPopup />
-              <FloatingAudioButton />
-              <PWAInstallPrompt />
-              <LanguagePromptPopup />
-              <MobileBottomNav />
-            </>
-          } />
-        </Routes>
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-saffron"></div></div>}>
+          <Routes>
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/*" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+                <main className="flex-grow pb-16 md:pb-0">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/gallery" element={<GalleryPage />} />
+                    <Route path="/community" element={<CommunityPage />} />
+                    <Route path="/pride" element={<PridePage />} />
+                    <Route path="/news" element={<NewsPage />} />
+                    <Route path="/complaint" element={<ComplaintPage />} />
+                    <Route path="/khel-registration" element={<RegistrationPage />} />
+                    <Route path="/panchayat" element={<PanchayatPage />} />
+                    <Route path="/settings" element={<SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <NotificationPopup />
+                <FloatingAudioButton />
+                <PWAInstallPrompt />
+                <LanguagePromptPopup />
+                <MobileBottomNav />
+              </>
+            } />
+          </Routes>
+        </Suspense>
       </div>
     </Router>
   );
