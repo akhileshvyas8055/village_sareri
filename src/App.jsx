@@ -18,6 +18,7 @@ import MobileBottomNav from './components/MobileBottomNav';
 import ComplaintPage from './pages/ComplaintPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
+import LanguagePromptPopup from './components/LanguagePromptPopup';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Admin from './pages/Admin';
@@ -102,6 +103,7 @@ function App() {
               <NotificationPopup />
               <FloatingAudioButton />
               <PWAInstallPrompt />
+              <LanguagePromptPopup />
               <MobileBottomNav />
             </>
           } />

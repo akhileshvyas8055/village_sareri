@@ -16,9 +16,19 @@ const PWAInstallPrompt = () => {
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Show prompt after 5 seconds delay
+      // Wait for notification and language popups to be handled before showing PWA prompt
       if (!dismissed) {
-        setTimeout(() => setShowPrompt(true), 5000);
+        const checkInterval = setInterval(() => {
+          const notifAsked = localStorage.getItem('sareri_notification_asked');
+          const langSeen = localStorage.getItem('sareri_language_prompt_seen');
+          
+          if ((!notifAsked && Notification.permission === 'default') || !langSeen) {
+            return; // Keep waiting for previous popups
+          }
+          
+          setShowPrompt(true);
+          clearInterval(checkInterval);
+        }, 1000);
       }
     };
 
