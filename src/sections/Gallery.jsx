@@ -79,6 +79,8 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
                   <video 
                     src={item.src} 
                     muted 
+                    autoPlay
+                    loop
                     playsInline
                     preload="metadata"
                     className="w-full h-32 sm:h-48 md:h-80 object-cover md:object-contain transform transition-transform duration-700 group-hover:scale-105 pointer-events-none"
