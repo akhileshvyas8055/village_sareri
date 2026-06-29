@@ -7,6 +7,7 @@ const ManageCountdown = () => {
   const [countdown, setCountdown] = useState({
     title: '',
     targetDate: '',
+    theme: 'saffron',
     isActive: false
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -93,6 +94,21 @@ const ManageCountdown = () => {
             onChange={(e) => setCountdown({...countdown, targetDate: e.target.value})}
             className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-saffron focus:border-transparent outline-none transition-all"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Theme</label>
+          <select
+            value={countdown.theme || 'saffron'}
+            onChange={(e) => setCountdown({...countdown, theme: e.target.value})}
+            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-saffron focus:border-transparent outline-none transition-all"
+          >
+            <option value="saffron">Festival / Religious (Saffron)</option>
+            <option value="blue">Krishna Janmashtami (Blue)</option>
+            <option value="green">Gram Sabha / Panchayat (Green)</option>
+            <option value="dark">General Meeting (Dark/Professional)</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">Changes the background color of the widget to match the event type.</p>
         </div>
 
         <button

@@ -49,13 +49,29 @@ const CountdownWidget = () => {
 
   if (!countdownData) return null;
 
+  const getThemeClasses = (theme) => {
+    switch (theme) {
+      case 'blue':
+        return 'from-blue-600 via-indigo-600 to-purple-700';
+      case 'green':
+        return 'from-emerald-600 via-green-600 to-teal-800';
+      case 'dark':
+        return 'from-gray-800 via-gray-900 to-black border-2 border-gray-700';
+      case 'saffron':
+      default:
+        return 'from-orange-500 via-saffron to-red-600';
+    }
+  };
+
+  const themeClasses = getThemeClasses(countdownData.theme);
+
   return (
     <section className="py-6 px-4">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="container mx-auto max-w-4xl bg-gradient-to-r from-orange-500 via-saffron to-red-500 rounded-3xl p-6 md:p-10 shadow-2xl text-center relative overflow-hidden"
+        className={`container mx-auto max-w-4xl bg-gradient-to-r ${themeClasses} rounded-3xl p-6 md:p-10 shadow-2xl text-center relative overflow-hidden`}
       >
         {/* Animated background elements */}
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/pattern.svg')] opacity-10 pointer-events-none"></div>
