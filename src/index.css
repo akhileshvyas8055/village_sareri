@@ -31,6 +31,8 @@
     overflow-x: hidden;
     width: 100%;
     top: 0 !important; /* Prevent Google Translate from shifting body */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   /* Hide Google Translate UI elements */
