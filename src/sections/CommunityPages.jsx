@@ -19,7 +19,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/bajrang_gopal_gaushala_sareri?igsh=Y3gyM2VpajN0Y2V2',
       desc: 'Official page of our village Gaushala. Follow for updates on cow welfare, service, and daily activities.',
       color: 'from-orange-400 to-red-500',
-      image: '' // Add your photo path here, e.g., '/photos/gaushala.jpg'
+      image: 'https://ui-avatars.com/api/?name=Gaushala&background=f97316&color=fff&size=200' 
     },
     {
       id: 2,
@@ -28,7 +28,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/shree_sareri_shyam?igsh=MW9qN2o2bmVwMHQ1cg==',
       desc: 'Divine glimpses, aarti timings, and regular updates from the sacred Shree Sareri Shyam Temple.',
       color: 'from-blue-400 to-indigo-600',
-      image: '' // Add your photo path here, e.g., '/photos/shyam.jpg'
+      image: 'https://ui-avatars.com/api/?name=Shree+Shyam&background=3b82f6&color=fff&size=200' 
     },
     {
       id: 3,
@@ -37,7 +37,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/bheru_kheda_bk_sareri?igsh=MWllaGtoN3Z0YWhlMw==',
       desc: 'Latest updates, traditions, and cultural highlights from Bheru Kheda, <span className="notranslate">Brahmano Ki Sareri</span>.',
       color: 'from-emerald-400 to-teal-600',
-      image: '' // Add your photo path here, e.g., '/photos/bheru.jpg'
+      image: 'https://ui-avatars.com/api/?name=Bheru+Kheda&background=10b981&color=fff&size=200' 
     },
     {
       id: 4,
@@ -46,7 +46,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/shree_.charbhujanath_?igsh=MTBwbGdkbjVyNnZsbg==',
       desc: 'Official page of Shree Charbhuja Nath Ji. Stay connected for daily darshan and temple updates.',
       color: 'from-yellow-400 to-orange-600',
-      image: '' // Add your photo path here
+      image: 'https://ui-avatars.com/api/?name=Charbhuja&background=eab308&color=fff&size=200' 
     }
   ];
 
