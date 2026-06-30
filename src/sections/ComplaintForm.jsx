@@ -68,13 +68,42 @@ const ComplaintForm = () => {
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setComplaint({ ...complaint, photo: reader.result });
+    if (!file) return;
+
+    // Compress image to make submission faster and avoid white page/crash
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG with 0.6 quality for very fast upload
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+        setComplaint({ ...complaint, photo: compressedBase64 });
       };
-      reader.readAsDataURL(file);
-    }
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const submitComplaint = async (e) => {
