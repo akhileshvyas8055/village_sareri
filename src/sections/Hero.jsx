@@ -16,6 +16,8 @@ const Hero = () => {
         loop 
         muted 
         playsInline
+        preload="auto"
+        poster="/photos/About.jpeg"
         className="absolute inset-0 w-full h-full object-cover scale-105 filter blur-[2px] brightness-110 contrast-125"
       >
         <source src="/video/bgvideo.mp4" type="video/mp4" />
