@@ -36,8 +36,9 @@
   }
 
   /* Hide Google Translate UI elements and floating bubbles */
+  div.skiptranslate,
   iframe.skiptranslate,
-  div.skiptranslate > iframe,
+  .goog-te-gadget-simple,
   .goog-te-banner-frame,
   .goog-te-gadget-icon,
   .goog-te-spinner-pos,
