@@ -38,9 +38,9 @@ const GalleryPage = () => {
 
   return (
     <div className="pt-20 bg-gray-50 dark:bg-gray-900 min-h-screen notranslate">
-      <SEO 
-        title="Gallery - Brahmano Ki Sareri Village Photos & Videos"
-        description="Brahmano Ki Sareri ki photo gallery. Ramleela, Mela Purnima, Khel Mahotsav, temples aur gaon ke sundar nazaron ki tasveerein."
+            <SEO 
+        title="Village Gallery | Photos & Videos of Brahmano Ki Sareri"
+        description="Explore beautiful photos and videos of Brahmano Ki Sareri including festivals, temples, Sareri Shyam Khel Mahotsav, and village life."
         url="https://villagesareri.in/gallery"
       />
       <div className="text-center py-12">

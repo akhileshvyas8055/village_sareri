@@ -4,6 +4,15 @@ import { FiInstagram, FiExternalLink, FiYoutube } from 'react-icons/fi';
 const CommunityPages = () => {
   const pages = [
     {
+      id: 0,
+      title: 'Village Sareri',
+      handle: '@village_sareri',
+      url: 'https://www.instagram.com/village_sareri?igsh=cDVoYWNwZzlteGkw',
+      desc: 'Official page of Brahmano Ki Sareri. Follow for latest updates, beauty, and news from our village.',
+      color: 'from-pink-500 to-purple-600',
+      image: '/photos/About.jpeg' 
+    },
+    {
       id: 1,
       title: 'Bajrang Gopal Gaushala',
       handle: '@bajrang_gopal_gaushala_sareri',

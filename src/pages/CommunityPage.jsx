@@ -4,9 +4,9 @@ import SEO from '../components/SEO';
 const CommunityPage = () => {
   return (
     <div className="pt-20">
-      <SEO 
-        title="Community - Brahmano Ki Sareri"
-        description="Brahmano Ki Sareri ke samudaayik pages. Gaon ke log, samaj aur sansthaon ki jankari."
+            <SEO 
+        title="Sareri Community Connect | Discussions & Polls"
+        description="Join community discussions, participate in village polls, share opinions, and stay connected with Brahmano Ki Sareri."
         url="https://villagesareri.in/community"
       />
       <CommunityPages />

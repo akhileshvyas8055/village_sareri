@@ -37,9 +37,10 @@ const PridePage = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-fixed bg-center bg-cover" style={{ backgroundImage: "url('/photos/pride_bg.png')" }}>
-      <SEO 
-        title="Pride of Sareri | Village Achievements"
-        description="Celebrating the Pride of Sareri — A wall of honor dedicated to the exceptional individuals who have elevated our village's name through their dedication in education, sports, and public service."
+            <SEO 
+        title="Pride of Sareri | Achievements & Khel Mahotsav"
+        description="Celebrating the achievements of Brahmano Ki Sareri and showcasing the grand Sareri Shyam Khel Mahotsav."
+        url="https://villagesareri.in/pride"
       />
 
       {/* Overlay — softer than pure black */}

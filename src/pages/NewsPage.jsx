@@ -4,9 +4,9 @@ import SEO from '../components/SEO';
 const NewsPage = () => {
   return (
     <div className="pt-20">
-      <SEO 
-        title="News & Updates - Brahmano Ki Sareri"
-        description="Brahmano Ki Sareri ke latest samachar aur updates. Gaon ki sabhi khabrein ek jagah."
+            <SEO 
+        title="Sareri News & Updates | Latest Announcements"
+        description="Stay updated with the latest village news, announcements, notices, and important updates from Brahmano Ki Sareri community."
         url="https://villagesareri.in/news"
       />
       <NewsList />

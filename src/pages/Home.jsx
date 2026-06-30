@@ -10,9 +10,9 @@ import CountdownWidget from '../components/CountdownWidget';
 const Home = () => {
   return (
     <div className="flex flex-col">
-      <SEO 
-        title="Brahmano Ki Sareri — Connecting Village with Future"
-        description="Brahmano Ki Sareri, Bhilwara, Rajasthan ki official website. Gaon ki culture, heritage, festivals, Panchayat aur community updates ek jagah."
+            <SEO 
+        title="Brahmano Ki Sareri | Smart Village in Asind, Bhilwara Rajasthan"
+        description="Welcome to the official website of Brahmano Ki Sareri. Explore village culture, news, panchayat updates, events, and community activities. ब्राह्मणों की सरेरी की डिजिटल दुनिया में आपका स्वागत है।"
         url="https://villagesareri.in/"
       />
       <Hero />

@@ -4,9 +4,9 @@ import SEO from '../components/SEO';
 const ComplaintPage = () => {
   return (
     <div className="pt-20">
-      <SEO 
-        title="Register Complaint - Brahmano Ki Sareri"
-        description="Brahmano Ki Sareri gram panchayat shikayat portal. Apni samasya ya suzhav darj karein."
+            <SEO 
+        title="Jan Sunwai & Complaints | Sareri Gram Panchayat"
+        description="Submit complaints, suggestions, and public feedback online to Sareri Gram Panchayat for better governance and transparency."
         url="https://villagesareri.in/complaint"
       />
       <ComplaintForm />

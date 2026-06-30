@@ -36,9 +36,9 @@ const PanchayatPage = () => {
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] pt-24 pb-12 font-sans">
-      <SEO 
-        title="Gram Panchayat - Brahmano Ki Sareri"
-        description="Brahmano Ki Sareri Gram Panchayat ki jankari. Sarpanch, Ward Panch, Sachiv details aur suchna patt."
+            <SEO 
+        title="Sareri Gram Panchayat | Sarpanch & Ward Panch Details"
+        description="Get details about Sareri Gram Panchayat, Sarpanch, Ward Panchs, village administration, and development initiatives."
         url="https://villagesareri.in/panchayat"
       />
       <div className="container mx-auto px-4 md:px-8 max-w-7xl">
