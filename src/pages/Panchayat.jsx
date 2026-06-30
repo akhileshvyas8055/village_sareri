@@ -39,7 +39,7 @@ const PanchayatPage = () => {
       <SEO 
         title="Gram Panchayat - Brahmano Ki Sareri"
         description="Brahmano Ki Sareri Gram Panchayat ki jankari. Sarpanch, Ward Panch, Sachiv details aur suchna patt."
-        url="https://sareri.vercel.app/panchayat"
+        url="https://villagesareri.in/panchayat"
       />
       <div className="container mx-auto px-4 md:px-8 max-w-7xl">
         

@@ -13,7 +13,7 @@ const Home = () => {
       <SEO 
         title="Brahmano Ki Sareri — Connecting Village with Future"
         description="Brahmano Ki Sareri, Bhilwara, Rajasthan ki official website. Gaon ki culture, heritage, festivals, Panchayat aur community updates ek jagah."
-        url="https://sareri.vercel.app/"
+        url="https://villagesareri.in/"
       />
       <Hero />
       

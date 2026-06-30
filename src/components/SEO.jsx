@@ -3,8 +3,8 @@ import { Helmet } from 'react-helmet-async';
 
 const defaultMeta = {
   siteName: 'Brahmano Ki Sareri',
-  siteUrl: 'https://sareri.vercel.app',
-  image: 'https://sareri.vercel.app/photos/About.jpeg',
+  siteUrl: 'https://villagesareri.in',
+  image: 'https://villagesareri.in/photos/About.jpeg',
   locale: 'hi_IN',
 };
 

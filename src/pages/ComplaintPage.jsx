@@ -7,7 +7,7 @@ const ComplaintPage = () => {
       <SEO 
         title="Register Complaint - Brahmano Ki Sareri"
         description="Brahmano Ki Sareri gram panchayat shikayat portal. Apni samasya ya suzhav darj karein."
-        url="https://sareri.vercel.app/complaint"
+        url="https://villagesareri.in/complaint"
       />
       <ComplaintForm />
     </div>

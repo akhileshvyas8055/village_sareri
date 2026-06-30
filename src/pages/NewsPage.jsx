@@ -7,7 +7,7 @@ const NewsPage = () => {
       <SEO 
         title="News & Updates - Brahmano Ki Sareri"
         description="Brahmano Ki Sareri ke latest samachar aur updates. Gaon ki sabhi khabrein ek jagah."
-        url="https://sareri.vercel.app/news"
+        url="https://villagesareri.in/news"
       />
       <NewsList />
     </div>

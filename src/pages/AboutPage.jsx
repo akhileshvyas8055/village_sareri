@@ -7,7 +7,7 @@ const AboutPage = () => {
       <SEO 
         title="About - Brahmano Ki Sareri Village"
         description="Brahmano Ki Sareri ki kahani, itihaas, sanskriti aur parampara. Bhilwara, Rajasthan ka ek virasati gaon."
-        url="https://sareri.vercel.app/about"
+        url="https://villagesareri.in/about"
       />
       <About />
     </div>

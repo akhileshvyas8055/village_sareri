@@ -7,7 +7,7 @@ const CommunityPage = () => {
       <SEO 
         title="Community - Brahmano Ki Sareri"
         description="Brahmano Ki Sareri ke samudaayik pages. Gaon ke log, samaj aur sansthaon ki jankari."
-        url="https://sareri.vercel.app/community"
+        url="https://villagesareri.in/community"
       />
       <CommunityPages />
     </div>
