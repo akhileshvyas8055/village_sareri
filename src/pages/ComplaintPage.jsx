@@ -1,7 +1,12 @@
+import { useEffect } from 'react';
 import ComplaintForm from '../sections/ComplaintForm';
 import SEO from '../components/SEO';
 
 const ComplaintPage = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="pt-20">
             <SEO 
