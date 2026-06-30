@@ -17,7 +17,6 @@ const Hero = () => {
         muted 
         playsInline
         preload="auto"
-        poster="/photos/village_hero_poster.png"
         className="absolute inset-0 w-full h-full object-cover scale-105 filter blur-[2px] brightness-110 contrast-125"
       >
         <source src="/video/bgvideo.mp4" type="video/mp4" />
