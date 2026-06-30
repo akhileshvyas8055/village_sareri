@@ -19,7 +19,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/bajrang_gopal_gaushala_sareri?igsh=Y3gyM2VpajN0Y2V2',
       desc: 'Official page of our village Gaushala. Follow for updates on cow welfare, service, and daily activities.',
       color: 'from-orange-400 to-red-500',
-      image: 'https://ui-avatars.com/api/?name=Gaushala&background=f97316&color=fff&size=200' 
+      image: '/photos/gau%20sala.jpeg' 
     },
     {
       id: 2,
@@ -28,7 +28,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/shree_sareri_shyam?igsh=MW9qN2o2bmVwMHQ1cg==',
       desc: 'Divine glimpses, aarti timings, and regular updates from the sacred Shree Sareri Shyam Temple.',
       color: 'from-blue-400 to-indigo-600',
-      image: 'https://ui-avatars.com/api/?name=Shree+Shyam&background=3b82f6&color=fff&size=200' 
+      image: '/photos/sareri%20shyam.jpeg' 
     },
     {
       id: 3,
@@ -37,7 +37,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/bheru_kheda_bk_sareri?igsh=MWllaGtoN3Z0YWhlMw==',
       desc: 'Latest updates, traditions, and cultural highlights from Bheru Kheda, <span className="notranslate">Brahmano Ki Sareri</span>.',
       color: 'from-emerald-400 to-teal-600',
-      image: 'https://ui-avatars.com/api/?name=Bheru+Kheda&background=10b981&color=fff&size=200' 
+      image: '/photos/bharu%20kheda.jpeg' 
     },
     {
       id: 4,
@@ -46,7 +46,7 @@ const CommunityPages = () => {
       url: 'https://www.instagram.com/shree_.charbhujanath_?igsh=MTBwbGdkbjVyNnZsbg==',
       desc: 'Official page of Shree Charbhuja Nath Ji. Stay connected for daily darshan and temple updates.',
       color: 'from-yellow-400 to-orange-600',
-      image: 'https://ui-avatars.com/api/?name=Charbhuja&background=eab308&color=fff&size=200' 
+      image: '/photos/charbhuja%20ji.jpeg' 
     }
   ];
 
@@ -109,7 +109,7 @@ const CommunityPages = () => {
               <div className="flex justify-between items-start mb-6">
                 <div className="w-20 h-20 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 shadow-lg transform group-hover:scale-110 transition-transform duration-300 overflow-hidden border-2 border-saffron/20 p-1">
                   {page.image ? (
-                    <img src={page.image} alt={page.title} className="w-full h-full object-cover rounded-full" />
+                    <img src={page.image} alt={page.title} className="w-full h-full object-cover rounded-full scale-[1.6]" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-full text-gray-400">
                       <FiInstagram className="w-6 h-6 mb-1 text-pink-400" />
