@@ -21,9 +21,9 @@ const About = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold font-heading text-gray-900 dark:text-white mb-4"
+            className="text-4xl md:text-5xl font-bold font-heading text-gray-900 dark:text-white mb-4 notranslate"
           >
-            About <span className="text-saffron notranslate">Brahmano Ki Sareri</span>
+            About <span className="text-saffron">Brahmano Ki Sareri</span>
           </motion.h2>
           <motion.div 
             initial={{ opacity: 0, scale: 0 }}
