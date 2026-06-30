@@ -35,12 +35,21 @@
     touch-action: manipulation;
   }
 
-  /* Hide Google Translate UI elements */
-  .skiptranslate {
+  /* Hide Google Translate UI elements and floating bubbles */
+  iframe.skiptranslate,
+  div.skiptranslate > iframe,
+  .goog-te-banner-frame,
+  .goog-te-gadget-icon,
+  .goog-te-spinner-pos,
+  #goog-gt-tt,
+  .VIpgJd-Zvi9od-aZ2wEe-wOHMyf,
+  .VIpgJd-Zvi9od-aZ2wEe-wOHMyf-ti6hGc,
+  .VIpgJd-Zvi9od-ORHb-OEVmcd,
+  #google_translate_element {
     display: none !important;
-  }
-  .goog-te-spinner-pos {
-    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
   .goog-text-highlight {
     background-color: transparent !important;
