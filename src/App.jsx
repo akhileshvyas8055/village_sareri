@@ -5,7 +5,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingAudioButton from './components/FloatingAudioButton';
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 import NotificationPopup from './components/NotificationPopup';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -27,6 +27,20 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 import { AdminContext } from './dataStore';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -83,6 +97,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen flex flex-col">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-saffron"></div></div>}>
           <Routes>
