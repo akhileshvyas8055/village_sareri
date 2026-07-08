@@ -41,6 +41,14 @@
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css" />
   </head>
   <body>
+    <script>
+      window.addEventListener('error', function(e) {
+        alert('Runtime Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        alert('Unhandled Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+      });
+    </script>
     <div id="root"></div>
     
     <!-- Google Translate Element (Hidden) -->
