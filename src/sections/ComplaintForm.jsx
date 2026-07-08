@@ -5,6 +5,29 @@ import { ref, push, set, get, query, orderByChild, equalTo, update } from 'fireb
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Link } from 'react-router-dom';
 import { rtdb, auth } from '../firebase';
+import React from 'react';
+
+class LocalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 bg-red-100 text-red-900 rounded-xl">
+          <h3 className="font-bold">React Render Error:</h3>
+          <p className="text-sm">{this.state.error?.message}</p>
+          <pre className="text-xs mt-2 overflow-auto max-h-40">{this.state.error?.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ComplaintForm = () => {
   const [activeTab, setActiveTab] = useState('register'); // 'register' or 'history'
@@ -411,6 +434,7 @@ const ComplaintForm = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    <LocalErrorBoundary>
                     {userComplaints.map(complaint => (
                       <motion.div 
                         key={complaint.firebaseId}
@@ -472,6 +496,7 @@ const ComplaintForm = () => {
                         </div>
                       </motion.div>
                     ))}
+                    </LocalErrorBoundary>
                   </div>
                 )}
               </div>
