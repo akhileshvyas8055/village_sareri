@@ -1,23 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCamera, FiUpload, FiMic, FiCalendar, FiCheckCircle, FiClock, FiSearch, FiFileText, FiUser } from 'react-icons/fi';
-import { ref, push, set, get, query, orderByChild, equalTo } from 'firebase/database';
+import { FiCamera, FiUpload, FiMic, FiCalendar, FiCheckCircle, FiClock, FiSearch, FiFileText, FiUser, FiXCircle } from 'react-icons/fi';
+import { ref, push, set, get, query, orderByChild, equalTo, update } from 'firebase/database';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Link } from 'react-router-dom';
 import { rtdb, auth } from '../firebase';
 
 const ComplaintForm = () => {
-  const [activeTab, setActiveTab] = useState('register'); // 'register' or 'track'
+  const [activeTab, setActiveTab] = useState('register'); // 'register' or 'history'
   
   const [complaint, setComplaint] = useState({ name: '', contact: '', details: '', photo: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [successTrackingId, setSuccessTrackingId] = useState('');
 
-  const [trackIdInput, setTrackIdInput] = useState('');
-  const [trackedComplaint, setTrackedComplaint] = useState(null);
-  const [isTracking, setIsTracking] = useState(false);
-  const [trackError, setTrackError] = useState('');
+  const [userComplaints, setUserComplaints] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -32,6 +30,34 @@ const ComplaintForm = () => {
     });
     return () => unsub();
   }, []);
+
+  const fetchUserComplaints = async () => {
+    if (!user) return;
+    setIsLoadingHistory(true);
+    try {
+      const complaintsRef = ref(rtdb, 'adminData/complaints');
+      const snapshot = await get(complaintsRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const complaintsArray = Object.keys(data).map(key => ({
+          firebaseId: key,
+          ...data[key]
+        })).filter(c => c.userId === user.uid);
+        setUserComplaints(complaintsArray.reverse());
+      } else {
+        setUserComplaints([]);
+      }
+    } catch (error) {
+      console.error('Error fetching complaints:', error);
+    }
+    setIsLoadingHistory(false);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchUserComplaints();
+    }
+  }, [activeTab, user]);
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -117,6 +143,7 @@ const ComplaintForm = () => {
         timestamp: Date.now(),
         status: 'Pending',
         trackingId,
+        userId: user?.uid || null,
         ...complaint
       };
       
@@ -133,36 +160,20 @@ const ComplaintForm = () => {
     setIsSubmitting(false);
   };
 
-  const handleTrack = async (e) => {
-    e.preventDefault();
-    if (!trackIdInput.trim()) return;
-    
-    setIsTracking(true);
-    setTrackError('');
-    setTrackedComplaint(null);
+  const handleCancelComplaint = async (firebaseId) => {
+    if (!window.confirm('Are you sure you want to cancel this complaint?')) return;
     
     try {
-      const searchId = trackIdInput.trim().toUpperCase();
-      const complaintsRef = ref(rtdb, 'adminData/complaints');
-      const snapshot = await get(complaintsRef);
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        const complaintsArray = Object.values(data);
-        const complaintData = complaintsArray.find(c => c.trackingId === searchId);
-        
-        if (complaintData) {
-          setTrackedComplaint(complaintData);
-        } else {
-          setTrackError('No complaint found with this Tracking ID. Please check and try again.');
-        }
-      } else {
-        setTrackError('No complaints found in the system.');
-      }
+      const complaintRef = ref(rtdb, `adminData/complaints/${firebaseId}`);
+      await update(complaintRef, { status: 'Cancelled' });
+      // Update local state
+      setUserComplaints(prev => prev.map(c => 
+        c.firebaseId === firebaseId ? { ...c, status: 'Cancelled' } : c
+      ));
     } catch (error) {
-      console.error('Error tracking complaint:', error);
-      setTrackError('Something went wrong. Please try again.');
+      console.error('Error cancelling complaint:', error);
+      alert('Failed to cancel complaint. Please try again.');
     }
-    setIsTracking(false);
   };
 
   return (
@@ -201,14 +212,14 @@ const ComplaintForm = () => {
             <FiFileText className="inline-block mr-2" /> Register Complaint
           </button>
           <button 
-            onClick={() => setActiveTab('track')}
+            onClick={() => setActiveTab('history')}
             className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
-              activeTab === 'track' 
+              activeTab === 'history' 
                 ? 'bg-saffron text-white shadow-lg shadow-saffron/30' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
             }`}
           >
-            <FiSearch className="inline-block mr-2" /> Track Status
+            <FiSearch className="inline-block mr-2" /> My Complaints
           </button>
         </div>
 
@@ -238,12 +249,11 @@ const ComplaintForm = () => {
                   <button 
                     onClick={() => {
                       setSuccessTrackingId('');
-                      setActiveTab('track');
-                      setTrackIdInput(successTrackingId);
+                      setActiveTab('history');
                     }}
                     className="bg-saffron hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl transition-colors"
                   >
-                    Track Status Now
+                    View My Complaints
                   </button>
                 </div>
               ) : !user ? (
@@ -367,86 +377,102 @@ const ComplaintForm = () => {
             </motion.div>
           )}
 
-          {activeTab === 'track' && (
+          {activeTab === 'history' && (
             <motion.div
-              key="track"
+              key="history"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               className="bg-white dark:bg-darkCard p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800"
             >
-              <div className="max-w-xl mx-auto">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Track Your Complaint</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-center mb-8 text-sm">Enter the Tracking ID provided to you when you registered the complaint.</p>
+              <div className="max-w-2xl mx-auto">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">My Complaints History</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-center mb-8 text-sm">View and manage all your registered complaints.</p>
                 
-                <form onSubmit={handleTrack} className="mb-10">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input 
-                      type="text" 
-                      value={trackIdInput}
-                      onChange={(e) => setTrackIdInput(e.target.value.toUpperCase())}
-                      placeholder="e.g. CMP-123456"
-                      className="flex-1 px-5 py-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron text-lg font-bold tracking-widest text-center sm:text-left text-gray-900 dark:text-white uppercase"
-                      required
-                    />
-                    <button 
-                      type="submit"
-                      disabled={isTracking}
-                      className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-saffron dark:hover:bg-saffron px-8 py-4 rounded-xl font-bold transition-colors disabled:opacity-70 whitespace-nowrap"
-                    >
-                      {isTracking ? 'Searching...' : 'Track Status'}
-                    </button>
-                  </div>
-                  {trackError && <p className="text-red-500 text-sm mt-3 text-center sm:text-left font-medium">{trackError}</p>}
-                </form>
-
-                {trackedComplaint && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 relative overflow-hidden"
-                  >
-                    <div className={`absolute left-0 top-0 bottom-0 w-2 ${
-                      trackedComplaint.status === 'Resolved' ? 'bg-green-500' : 
-                      trackedComplaint.status === 'Rejected' ? 'bg-red-500' :
-                      trackedComplaint.status === 'In Progress' ? 'bg-blue-500' : 'bg-orange-500'
-                    }`} />
-                    
-                    <div className="pl-4">
-                      <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
-                        <div>
-                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tracking ID</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-white">{trackedComplaint.trackingId}</p>
-                        </div>
-                        <span className={`px-4 py-1.5 text-sm font-bold uppercase rounded-full flex items-center gap-1.5 ${
-                          trackedComplaint.status === 'Resolved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
-                          trackedComplaint.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          trackedComplaint.status === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                          'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                        }`}>
-                          {trackedComplaint.status === 'Resolved' ? <FiCheckCircle /> : <FiClock />}
-                          {trackedComplaint.status || 'Pending'}
-                        </span>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Date Submitted</p>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{trackedComplaint.date}</p>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Complaint Details</p>
-                        <p className="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap">{trackedComplaint.details}</p>
-                      </div>
-                      
-                      {trackedComplaint.adminReply && (
-                        <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-xl border-l-4 border-indigo-500 shadow-sm">
-                          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mb-2">Reply from Panchayat:</p>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{trackedComplaint.adminReply}</p>
-                        </div>
-                      )}
+                {!user ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <FiUser className="w-10 h-10 text-gray-400" />
                     </div>
-                  </motion.div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Login Required</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                      Please login to view your complaints history.
+                    </p>
+                  </div>
+                ) : isLoadingHistory ? (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron"></div>
+                  </div>
+                ) : userComplaints.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
+                    <FiFileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No Complaints Found</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">You haven't registered any complaints yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {userComplaints.map(complaint => (
+                      <motion.div 
+                        key={complaint.firebaseId}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 relative overflow-hidden group transition-all hover:shadow-md"
+                      >
+                        <div className={`absolute left-0 top-0 bottom-0 w-2 ${
+                          complaint.status === 'Resolved' ? 'bg-green-500' : 
+                          complaint.status === 'Rejected' ? 'bg-red-500' :
+                          complaint.status === 'Cancelled' ? 'bg-gray-400' :
+                          complaint.status === 'In Progress' ? 'bg-blue-500' : 'bg-orange-500'
+                        }`} />
+                        
+                        <div className="pl-4">
+                          <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
+                            <div>
+                              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tracking ID</p>
+                              <div className="flex items-center gap-3">
+                                <p className="text-lg font-bold text-gray-900 dark:text-white">{complaint.trackingId}</p>
+                                <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded font-medium">{complaint.date}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`px-4 py-1.5 text-sm font-bold uppercase rounded-full flex items-center gap-1.5 ${
+                                complaint.status === 'Resolved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                                complaint.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                complaint.status === 'Cancelled' ? 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' :
+                                complaint.status === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                              }`}>
+                                {complaint.status === 'Resolved' ? <FiCheckCircle /> : 
+                                 complaint.status === 'Cancelled' ? <FiXCircle /> : <FiClock />}
+                                {complaint.status || 'Pending'}
+                              </span>
+                              {complaint.status === 'Pending' && (
+                                <button
+                                  onClick={() => handleCancelComplaint(complaint.firebaseId)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-full transition-colors tooltip"
+                                  title="Cancel Complaint"
+                                >
+                                  <FiXCircle className="w-5 h-5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mb-4">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Complaint Details</p>
+                            <p className="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap">{complaint.details}</p>
+                          </div>
+                          
+                          {complaint.adminReply && (
+                            <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-xl border-l-4 border-indigo-500 shadow-sm">
+                              <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mb-1">Reply from Panchayat:</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{complaint.adminReply}</p>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 )}
               </div>
             </motion.div>
