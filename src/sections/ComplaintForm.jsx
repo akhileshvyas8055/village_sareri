@@ -325,10 +325,18 @@ const ComplaintForm = () => {
                 <input 
                   type="tel" 
                   required
+                  pattern="[0-9]{10}"
+                  minLength="10"
+                  maxLength="10"
                   value={complaint.contact}
-                  onChange={(e) => setComplaint({...complaint, contact: e.target.value})}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setComplaint({...complaint, contact: val});
+                  }}
+                  onInvalid={(e) => e.target.setCustomValidity('Please enter exactly 10 digits mobile number')}
+                  onInput={(e) => e.target.setCustomValidity('')}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-saffron transition-all text-gray-900 dark:text-white"
-                  placeholder="Enter your mobile number / अपना मोबाइल नंबर लिखें"
+                  placeholder="Enter 10-digit mobile number / 10 अंकों का मोबाइल नंबर लिखें"
                 />
               </div>
               <div>
