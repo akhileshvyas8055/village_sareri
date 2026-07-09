@@ -13,7 +13,7 @@ const LanguagePromptPopup = () => {
       
       // If notification hasn't been asked yet, wait for it
       // Notification.permission might be 'default', meaning we still need to ask
-      if (!notifAsked && Notification.permission === 'default') {
+      if (!notifAsked && 'Notification' in window && Notification.permission === 'default') {
          return; // Keep waiting
       }
       

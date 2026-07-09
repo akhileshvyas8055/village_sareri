@@ -22,7 +22,7 @@ const PWAInstallPrompt = () => {
           const notifAsked = localStorage.getItem('sareri_notification_asked');
           const langSeen = localStorage.getItem('sareri_language_prompt_seen');
           
-          if ((!notifAsked && Notification.permission === 'default') || !langSeen) {
+          if ((!notifAsked && 'Notification' in window && Notification.permission === 'default') || !langSeen) {
             return; // Keep waiting for previous popups
           }
           
