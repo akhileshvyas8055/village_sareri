@@ -40,6 +40,7 @@ const SectionHeading = ({ label, title, description, to, action = 'View all' }) 
 
 const Home = () => {
   const [query, setQuery] = useState('');
+  const [communityOpen, setCommunityOpen] = useState(false);
   const [notices, setNotices] = useState([]);
   const [news, setNews] = useState([]);
   const [achievers, setAchievers] = useState([]);
@@ -146,7 +147,7 @@ const Home = () => {
           </div>
         </section>
 
-        <main>
+        <div>
           <section id="quick-services" className="scroll-mt-24 py-14 sm:py-20">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <SectionHeading label="ONE-TAP ACCESS" title="आपकी ज़रूरी सेवाएँ" description="गाँव से जुड़ी जानकारी और सेवाओं तक पहुँचने का आसान तरीका।" />
@@ -279,12 +280,12 @@ const Home = () => {
           </section>
 
           <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-            <details className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+            <details onToggle={(event) => setCommunityOpen(event.currentTarget.open)} className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
               <summary className="cursor-pointer px-6 py-5 text-base font-extrabold text-[#0D477A] dark:text-teal-200">More from Sareri — Khel Utsav, community poll & virtual tour</summary>
-              <div className="border-t border-slate-100 dark:border-slate-700"><CountdownWidget /><KhelBanner /><PollWidget /><VirtualTourBanner /></div>
+              {communityOpen && <div className="border-t border-slate-100 dark:border-slate-700"><CountdownWidget /><KhelBanner /><PollWidget /><VirtualTourBanner /></div>}
             </details>
           </section>
-        </main>
+        </div>
       </div>
     </>
   );
