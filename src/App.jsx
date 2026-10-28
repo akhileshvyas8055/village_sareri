@@ -112,6 +112,7 @@ function App() {
                     <Route path="/gallery" element={<GalleryPage />} />
                     <Route path="/community" element={<CommunityPage />} />
                     <Route path="/pride" element={<PridePage />} />
+                    <Route path="/pride" element={<PridePage />} />
                     <Route path="/news" element={<NewsPage />} />
                     <Route path="/complaint" element={<ComplaintPage />} />
                     <Route path="/khel-registration" element={<RegistrationPage />} />
