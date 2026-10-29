@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiMenu, FiX, FiSettings, FiDownload } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
