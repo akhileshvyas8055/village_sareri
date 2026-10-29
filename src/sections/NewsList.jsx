@@ -7,6 +7,7 @@ import NewsShareButtons from '../components/NewsShareButtons';
 
 const NewsList = () => {
   const [newsUpdates, setNewsUpdates] = useState([]);
+  const [highlightedId, setHighlightedId] = useState(null);
 
   useEffect(() => {
     const newsRef = ref(rtdb, 'adminData/news');
@@ -29,14 +30,28 @@ const NewsList = () => {
   }, []);
 
   useEffect(() => {
-    if (newsUpdates.length > 0 && window.location.hash) {
-      const targetId = window.location.hash.slice(1);
-      setTimeout(() => {
-        const el = document.getElementById(targetId);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 300);
+    if (newsUpdates.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryId = urlParams.get('id');
+      const hashId = window.location.hash
+        ? window.location.hash.replace('#news-', '').replace('#', '')
+        : null;
+      const targetId = queryId || hashId;
+
+      if (targetId) {
+        setHighlightedId(targetId);
+        setTimeout(() => {
+          const el = document.getElementById(`news-${targetId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 350);
+
+        const timer = setTimeout(() => {
+          setHighlightedId(null);
+        }, 6000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [newsUpdates]);
 
@@ -71,8 +86,18 @@ const NewsList = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-700 scroll-mt-28"
+              className={`bg-white dark:bg-gray-800 rounded-3xl overflow-hidden transition-all duration-500 transform hover:-translate-y-1 scroll-mt-28 ${
+                item.id === highlightedId
+                  ? 'ring-4 ring-saffron shadow-2xl shadow-orange-500/30 scale-[1.01] border-2 border-saffron'
+                  : 'border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-2xl'
+              }`}
             >
+              {item.id === highlightedId && (
+                <div className="bg-gradient-to-r from-saffron to-orange-600 text-white text-xs font-bold px-4 py-2 flex items-center justify-between animate-pulse">
+                  <span>🎯 यह खबर लिंक से खोली गई है (Shared Article)</span>
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold bg-black/20 px-2 py-0.5 rounded-full">Active</span>
+                </div>
+              )}
               {item.image && (
                 <div className="w-full h-56 md:h-80 overflow-hidden relative group cursor-pointer">
                   <img 

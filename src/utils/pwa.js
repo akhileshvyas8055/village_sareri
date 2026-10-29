@@ -10,17 +10,27 @@ if (typeof window !== 'undefined') {
 
   window.addEventListener('appinstalled', () => {
     window.deferredPWAInstallPrompt = null;
+    try {
+      localStorage.setItem('pwa_installed', 'true');
+    } catch {}
     window.dispatchEvent(new CustomEvent('pwa-installed'));
   });
 }
 
 export const isAppInstalled = () => {
   if (typeof window === 'undefined') return false;
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://')
-  );
+  try {
+    const isStandalone = 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      window.navigator.standalone === true ||
+      document.referrer.includes('android-app://') ||
+      localStorage.getItem('pwa_installed') === 'true';
+    return Boolean(isStandalone);
+  } catch {
+    return false;
+  }
 };
 
 export const getDevicePlatform = () => {
