@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FiCalendar, FiBell } from 'react-icons/fi';
 import { ref, onValue } from 'firebase/database';
 import { rtdb } from '../firebase';
+import NewsShareButtons from '../components/NewsShareButtons';
 
 const NewsList = () => {
   const [newsUpdates, setNewsUpdates] = useState([]);
@@ -12,7 +13,10 @@ const NewsList = () => {
     const unsubNews = onValue(newsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const newsArray = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+        const newsArray = Object.entries(data).map(([id, val]) => ({
+          id,
+          ...val
+        })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         setNewsUpdates(newsArray);
       } else {
         setNewsUpdates([]);
@@ -23,6 +27,18 @@ const NewsList = () => {
       unsubNews();
     };
   }, []);
+
+  useEffect(() => {
+    if (newsUpdates.length > 0 && window.location.hash) {
+      const targetId = window.location.hash.slice(1);
+      setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+    }
+  }, [newsUpdates]);
 
   return (
     <section className="py-24 bg-white dark:bg-darkCard transition-colors min-h-screen notranslate">
@@ -51,10 +67,11 @@ const NewsList = () => {
           {newsUpdates.map((item, index) => (
             <motion.div 
               key={item.id}
+              id={`news-${item.id}`}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-700"
+              className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-700 scroll-mt-28"
             >
               {item.image && (
                 <div className="w-full h-56 md:h-80 overflow-hidden relative group cursor-pointer">
@@ -73,7 +90,7 @@ const NewsList = () => {
                     {item.type === 'Notice' && <FiBell />}
                     {item.type === 'Event' && <FiCalendar />}
                     {item.type === 'Announcement' && <FiBell />}
-                    {item.type}
+                    {item.type || 'News'}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400 font-bold bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-full">{item.date}</span>
                 </div>
@@ -81,6 +98,9 @@ const NewsList = () => {
                 <h4 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight font-heading">{item.title}</h4>
                 
                 <p className="text-gray-600 dark:text-gray-300 text-base md:text-lg leading-relaxed whitespace-pre-wrap">{item.desc}</p>
+
+                {/* Share News with Cover Photo */}
+                <NewsShareButtons item={item} />
               </div>
             </motion.div>
           ))}

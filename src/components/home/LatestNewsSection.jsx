@@ -9,6 +9,7 @@ import {
   LuTag,
   LuImageOff
 } from 'react-icons/lu';
+import NewsShareButtons from '../NewsShareButtons';
 
 const LatestNewsSection = () => {
   const [news, setNews] = useState([]);
@@ -165,15 +166,17 @@ const LatestNewsSection = () => {
                     )}
                   </div>
 
-                  {/* Footer link to News */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                  {/* Footer link to News & Share */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2">
                     <Link
-                      to="/news"
+                      to={`/news#news-${item.id}`}
                       className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#0D9488] dark:text-teal-300 hover:text-teal-700 dark:hover:text-teal-200 transition-colors min-h-[36px]"
                     >
-                      <span>पूरा समाचार पढ़ें</span>
+                      <span>पूरा पढ़ें</span>
                       <LuArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                     </Link>
+
+                    <NewsShareButtons item={item} compact={true} />
                   </div>
                 </div>
               </article>
