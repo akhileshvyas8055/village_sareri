@@ -1,0 +1,43 @@
+{
+  "rules": {
+    "businesses": {
+      ".read": true,
+      "$businessId": {
+        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() === auth.uid || auth.token.admin === true)"
+      }
+    },
+    "businessSlugs": {
+      ".read": true,
+      "$slug": {
+        ".write": "auth != null"
+      }
+    },
+    "businessApplications": {
+      ".read": "auth != null",
+      "$appId": {
+        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() === auth.uid || auth.token.admin === true)"
+      }
+    },
+    "businessReviews": {
+      ".read": true,
+      "$businessId": {
+        "$userUid": {
+          ".write": "auth != null && (auth.uid === $userUid || auth.token.admin === true)",
+          ".validate": "newData.hasChildren(['rating']) && newData.child('rating').isNumber() && newData.child('rating').val() >= 1 && newData.child('rating').val() <= 5"
+        }
+      }
+    },
+    "businessCategories": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "panchayat": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "adminData": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

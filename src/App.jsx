@@ -24,6 +24,11 @@ const PanchayatPage = lazy(() => import('./pages/Panchayat'));
 const ComplaintPage = lazy(() => import('./pages/ComplaintPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const NoticeBoardPage = lazy(() => import('./pages/NoticeBoardPage'));
+const EventsPage = lazy(() => import('./pages/EventsPage'));
+const BusinessDirectoryPage = lazy(() => import('./pages/BusinessDirectoryPage'));
+const BusinessRegisterPage = lazy(() => import('./pages/BusinessRegisterPage'));
+const BusinessDetailPage = lazy(() => import('./pages/BusinessDetailPage'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 import { AdminContext } from './dataStore';
@@ -43,15 +48,17 @@ function ScrollToTop() {
 }
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sareri_theme');
+      return saved === 'dark'; // Default is always light (false)
+    } catch {
+      return false;
+    }
+  });
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setDarkMode(true);
-    }
-
     // Foreground notification listener
     if (messaging) {
       const unsub = onMessage(messaging, (payload) => {
@@ -59,8 +66,8 @@ function App() {
           const title = payload.notification?.title || payload.data?.title || 'Village Alert';
           const options = {
             body: payload.notification?.body || payload.data?.body,
-            icon: payload.notification?.icon || '/photos/About.jpeg',
-            image: payload.notification?.image || '/photos/About.jpeg',
+            icon: '/photos/About.jpeg',
+            image: '/photos/About.jpeg',
             requireInteraction: true,
             tag: payload.messageId || title, // Deduplicate notifications across multiple tabs
             data: { url: payload.data?.link || '/' }
@@ -86,13 +93,19 @@ function App() {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      try {
+        localStorage.setItem('sareri_theme', 'dark');
+      } catch (e) {}
     } else {
       document.documentElement.classList.remove('dark');
+      try {
+        localStorage.setItem('sareri_theme', 'light');
+      } catch (e) {}
     }
   }, [darkMode]);
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+    setDarkMode(prev => !prev);
   };
 
   return (
@@ -116,8 +129,13 @@ function App() {
                     <Route path="/complaint" element={<ComplaintPage />} />
                     <Route path="/khel-registration" element={<RegistrationPage />} />
                     <Route path="/panchayat" element={<PanchayatPage />} />
+                    <Route path="/notices" element={<NoticeBoardPage />} />
+                    <Route path="/events" element={<EventsPage />} />
                     <Route path="/settings" element={<SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/businesses" element={<BusinessDirectoryPage />} />
+                    <Route path="/businesses/register" element={<BusinessRegisterPage />} />
+                    <Route path="/:slug" element={<BusinessDetailPage />} />
                   </Routes>
                 </main>
                 <Footer />

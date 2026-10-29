@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { FiBookOpen, FiActivity, FiShoppingCart, FiDroplet } from 'react-icons/fi';
 import { FaVihara, FaTractor } from 'react-icons/fa';
 
@@ -32,7 +31,7 @@ const Highlights = () => {
       id: 1,
       title: 'Schools & Education',
       desc: 'Providing quality education with modern facilities to shape the future of our village children.',
-      icon: <FiBookOpen className="w-6 h-6" />,
+      icon: <FiBookOpen className="w-5 h-5 md:w-6 md:h-6" />,
       image: schoolMedia.match(/\.(mp4|MOV|webm)$/i) ? '' : schoolMedia,
       video: schoolMedia.match(/\.(mp4|MOV|webm)$/i) ? schoolMedia : '',
       color: 'from-blue-500/80 to-blue-900/90'
@@ -41,7 +40,7 @@ const Highlights = () => {
       id: 2,
       title: 'Ramleela Tradition',
       desc: 'Over 50 years of rich cultural heritage where locals perform the epic of Ramayana.',
-      icon: <FaVihara className="w-6 h-6" />,
+      icon: <FaVihara className="w-5 h-5 md:w-6 md:h-6" />,
       image: ramlilaMedia.match(/\.(mp4|MOV|webm)$/i) ? '' : ramlilaMedia,
       video: ramlilaMedia.match(/\.(mp4|MOV|webm)$/i) ? ramlilaMedia : '',
       color: 'from-orange-500/80 to-red-900/90'
@@ -50,7 +49,7 @@ const Highlights = () => {
       id: 3,
       title: 'Healthcare Center',
       desc: 'Primary health center ensuring wellness and medical support for the entire community.',
-      icon: <FiActivity className="w-6 h-6" />,
+      icon: <FiActivity className="w-5 h-5 md:w-6 md:h-6" />,
       image: '',
       video: '/photos/hospital.mp4',
       color: 'from-emerald-500/80 to-teal-900/90'
@@ -59,7 +58,7 @@ const Highlights = () => {
       id: 4,
       title: 'Local Markets',
       desc: 'Vibrant local markets offering fresh produce, traditional crafts, and daily essentials.',
-      icon: <FiShoppingCart className="w-6 h-6" />,
+      icon: <FiShoppingCart className="w-5 h-5 md:w-6 md:h-6" />,
       image: '/photos/local_market.jpg',
       video: '',
       color: 'from-purple-500/80 to-indigo-900/90'
@@ -68,7 +67,7 @@ const Highlights = () => {
       id: 5,
       title: 'Lush Farms',
       desc: 'Expansive agricultural lands that are the backbone of our economy and green ecosystem.',
-      icon: <FaTractor className="w-6 h-6" />,
+      icon: <FaTractor className="w-5 h-5 md:w-6 md:h-6" />,
       image: '',
       video: '/photos/Cotton_Farm.mp4',
       color: 'from-green-500/80 to-emerald-900/90'
@@ -77,7 +76,7 @@ const Highlights = () => {
       id: 6,
       title: 'Lakes & Ponds',
       desc: 'Beautiful water bodies like Naya Talab that sustain life, agriculture, and offer serene viewpoints.',
-      icon: <FiDroplet className="w-6 h-6" />,
+      icon: <FiDroplet className="w-5 h-5 md:w-6 md:h-6" />,
       image: pondMedia.match(/\.(mp4|MOV|webm)$/i) ? '' : pondMedia,
       video: pondMedia.match(/\.(mp4|MOV|webm)$/i) ? pondMedia : '',
       color: 'from-cyan-500/80 to-blue-900/90'
@@ -85,90 +84,71 @@ const Highlights = () => {
   ];
 
   return (
-    <section className="py-24 bg-white dark:bg-darkCard relative overflow-hidden">
+    <section className="py-16 md:py-24 bg-white dark:bg-[#1A1A1A] relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-saffron/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-green/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
       <div className="container mx-auto px-4 md:px-8 relative z-10">
-        <div className="text-center mb-16">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold font-heading text-gray-900 dark:text-white mb-4"
-          >
+        <div className="text-center mb-10 md:mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold font-heading text-gray-900 dark:text-white mb-4">
             Village <span className="text-saffron">Highlights</span>
-          </motion.h2>
-          <motion.div 
-            initial={{ opacity: 0, scale: 0 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="w-24 h-1 bg-saffron mx-auto rounded-full"
-          />
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="mt-6 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg"
-          >
-            Discover the key pillars that make <span className="notranslate">Brahmano Ki Sareri</span> a self-sustaining, vibrant, and beautiful community.
-          </motion.p>
+          </h2>
+          <div className="w-20 h-1 bg-saffron mx-auto rounded-full mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-base md:text-lg px-2">
+            Discover the key pillars that make <span className="notranslate font-semibold">Brahmano Ki Sareri</span> a self-sustaining, vibrant, and beautiful community.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {highlights.map((item, index) => (
-            <motion.div
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8">
+          {highlights.map((item) => (
+            <div
               key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group relative h-[350px] sm:h-[400px] rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500"
+              className="group relative h-[180px] sm:h-[220px] md:h-[350px] rounded-2xl md:rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100 dark:border-gray-800"
             >
-              {/* Background Image */}
-              <div className="absolute inset-0 w-full h-full">
+              {/* Background Image / Video */}
+              <div className="absolute inset-0 w-full h-full bg-gray-200 dark:bg-gray-800">
                 {item.video ? (
                   <video 
                     src={item.video} 
                     autoPlay loop muted playsInline
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-cover"
                   />
                 ) : item.image ? (
                   <img 
                     src={item.image} 
                     alt={item.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className={`w-full h-full bg-gradient-to-br ${item.color} transition-transform duration-700 group-hover:scale-110 flex items-center justify-center opacity-80`}>
-                     <span className="text-white/30 font-heading tracking-widest uppercase text-lg rotate-12 font-bold">Add Image</span>
+                  <div className={`w-full h-full bg-gradient-to-br ${item.color} flex items-center justify-center opacity-80`}>
+                     <span className="text-white/30 font-heading tracking-widest uppercase text-xs md:text-sm rotate-12 font-bold">Media Pending</span>
                   </div>
                 )}
               </div>
 
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
+              {/* Gradient Overlay for Readability (Always Visible) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-              {/* Content */}
-              <div className="absolute inset-x-0 bottom-0 p-6 md:p-8 flex flex-col justify-end h-full">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white mb-6 border border-white/30 shadow-lg transform group-hover:-translate-y-2 transition-transform duration-500">
-                  {item.icon}
+              {/* Content (Always Visible for Mobile) */}
+              <div className="absolute inset-x-0 bottom-0 p-3 md:p-5 flex flex-col justify-end h-full">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3 mb-1 md:mb-2 mt-auto">
+                  <div className="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-md flex flex-shrink-0 items-center justify-center text-white border border-white/20 shadow-sm">
+                    {/* Resizing icons slightly for mobile */}
+                    <div className="scale-75 md:scale-100 flex items-center justify-center">
+                      {item.icon}
+                    </div>
+                  </div>
+                  <h3 className="text-sm sm:text-base md:text-2xl font-bold font-heading text-white leading-tight drop-shadow-md">
+                    {item.title}
+                  </h3>
                 </div>
                 
-                <h3 className="text-2xl font-bold font-heading text-white mb-3 transform group-hover:-translate-y-2 transition-transform duration-500 delay-75">
-                  {item.title}
-                </h3>
-                
-                <p className="text-gray-300 font-medium leading-relaxed transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">
+                <p className="text-gray-200 text-[10px] sm:text-xs md:text-base font-medium leading-snug drop-shadow-sm line-clamp-2 md:line-clamp-none md:ml-[60px]">
                   {item.desc}
                 </p>
-                
-                {/* Decorative Line that expands on hover */}
-                <div className="w-0 h-1 bg-saffron mt-4 rounded-full group-hover:w-16 transition-all duration-500 delay-200" />
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

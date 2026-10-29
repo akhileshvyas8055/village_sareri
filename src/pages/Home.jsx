@@ -1,32 +1,52 @@
+import React from 'react';
 import Hero from '../sections/Hero';
-import KhelBanner from '../sections/KhelBanner';
-import Highlights from '../sections/Highlights';
-import WeatherCard from '../components/WeatherCard';
-import PollWidget from '../components/PollWidget';
-import VirtualTourBanner from '../components/VirtualTourBanner';
 import SEO from '../components/SEO';
-import CountdownWidget from '../components/CountdownWidget';
+import CitizenServices from '../components/home/CitizenServices';
+import HomeKhelMahotsavSection from '../components/home/HomeKhelMahotsavSection';
+import LatestNoticesSection from '../components/home/LatestNoticesSection';
+import LatestNewsSection from '../components/home/LatestNewsSection';
+import EventsCultureSection from '../components/home/EventsCultureSection';
+import JanSunwaiBanner from '../components/home/JanSunwaiBanner';
+import HomeBusinessesSection from '../components/home/HomeBusinessesSection';
+import PollWidget from '../components/PollWidget';
 
 const Home = () => {
   return (
-    <div className="flex flex-col">
-            <SEO 
-        title="BRAHMANO KI SARERI - Connecting Village with Future"
-        description="Welcome to the official website of Brahmano Ki Sareri. Explore village culture, news, panchayat updates, events, and community activities. ब्राह्मणों की सरेरी की डिजिटल दुनिया में आपका स्वागत है।"
+    <div className="flex flex-col bg-white dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 min-h-screen">
+      <SEO 
+        title="BRAHMANO KI SARERI - Official Smart Village Portal"
+        description="Welcome to the official website of Brahmano Ki Sareri. Explore village citizen services, notices, news, panchayat updates, events, and community initiatives."
         url="https://villagesareri.in/"
       />
-      <Hero />
-      
-      {/* Weather Card - Sits below Hero on mobile, overlaps on desktop */}
-      <div className="relative z-20 mt-6 md:-mt-24 mb-10 md:mb-12 container mx-auto px-4 flex justify-center md:justify-end">
-        <WeatherCard />
-      </div>
 
-      <CountdownWidget />
-      <KhelBanner />
+      {/* SECTION 1 — HERO */}
+      <Hero />
+
+      {/* SECTION 2 — QUICK ACCESS / CITIZEN SERVICES (Includes direct link to /pride) */}
+      <CitizenServices />
+
+      {/* SECTION — KHEL MAHOTSAV REGISTRATION (Controlled by Admin Toggle: only visible when started from admin) */}
+      <HomeKhelMahotsavSection />
+
+      {/* SECTION 3 — LATEST PANCHAYAT NOTICES */}
+      <LatestNoticesSection />
+
+      {/* SECTION — LOCAL BUSINESS DIRECTORY */}
+      <HomeBusinessesSection />
+
+      {/* SECTION 4 — LATEST VILLAGE NEWS */}
+      <LatestNewsSection />
+
+      {/* SECTION 5 — UPCOMING EVENTS & CULTURE */}
+      <EventsCultureSection />
+
+      {/* SECTION 6 — COMPLAINT / JAN SUNWAI CTA */}
+      <JanSunwaiBanner />
+
+      {/* SECTION 7 — PUBLIC OPINION POLL (Rendered at the very bottom below Shikayat) */}
       <PollWidget />
-      <Highlights />
-      <VirtualTourBanner />
+
+      {/* SECTION 8 — EXISTING FOOTER (Rendered automatically by App.jsx) */}
     </div>
   );
 };

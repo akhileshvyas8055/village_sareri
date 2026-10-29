@@ -1,5 +1,111 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+
+const GalleryCard = ({ item, onClick }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) return null;
+
+  return (
+    <div
+      onClick={onClick}
+      className="relative bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group h-48"
+    >
+      {/* SKELETON LOADER (Visible until video/image is loaded) */}
+      {!isLoaded && (
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse flex flex-col items-center justify-center p-4">
+          {item.isVideo ? (
+            <div className="w-12 h-12 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center shadow-inner">
+              <svg className="w-6 h-6 fill-current animate-pulse" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-400">
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+              </svg>
+            </div>
+          )}
+          <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-2">
+            {item.isVideo ? 'वीडियो लोड हो रही है...' : 'लोड हो रहा है...'}
+          </span>
+        </div>
+      )}
+
+      {/* MEDIA CONTENT */}
+      {item.isVideo ? (
+        (item.isYouTube || item.youtubeId || item.src?.includes('youtube.com') || item.src?.includes('youtu.be')) ? (
+          <div className="relative w-full h-48 bg-black overflow-hidden">
+            <img 
+              src={item.thumbnail || (item.youtubeId ? `https://img.youtube.com/vi/${item.youtubeId}/hqdefault.jpg` : item.src)}
+              alt={item.title}
+              loading="lazy"
+              onLoad={() => setIsLoaded(true)}
+              onError={() => {
+                // fallback to direct load if thumbnail errors
+                setIsLoaded(true);
+              }}
+              className={`w-full h-48 object-cover group-hover:scale-105 transition-all duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/10 transition-colors">
+              <div className="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                <svg className="w-5 h-5 fill-current ml-0.5" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        ) : item.src.includes('drive.google.com') ? (
+          <iframe
+            src={item.src.replace('uc?export=view&id=', 'file/d/') + '/preview'}
+            className={`w-full h-48 border-0 pointer-events-none object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            allow="autoplay"
+            title={item.title}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <video 
+            src={item.src} 
+            muted 
+            loop
+            playsInline
+            preload="metadata"
+            onLoadedData={() => setIsLoaded(true)}
+            onCanPlay={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
+            className={`w-full h-48 object-cover pointer-events-none group-hover:scale-105 transition-all duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          />
+        )
+      ) : (
+        <img 
+          src={item.src} 
+          alt={item.title}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+          className={`w-full h-48 object-cover group-hover:scale-105 transition-all duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        />
+      )}
+
+      {/* Video Indicator Badge */}
+      {item.isVideo && isLoaded && (
+        <div className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-bold flex items-center gap-1 backdrop-blur-sm border border-white/20">
+          <svg className="w-2.5 h-2.5 fill-current text-orange-400" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <span>वीडियो</span>
+        </div>
+      )}
+      
+      {/* Title Label */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-6 z-10">
+        <h3 className="text-white text-xs sm:text-sm font-semibold truncate drop-shadow-sm">{item.title}</h3>
+      </div>
+    </div>
+  );
+};
 
 const Gallery = ({ title = "Village Gallery", folder = "slideshow", description = "Beautiful moments from Brahmano Ki Sareri.", externalLinks = [] }) => {
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -38,7 +144,12 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
     desc: link.desc || description
   }));
 
-  const images = [...localImages, ...formattedExternal];
+  // Combine and strictly exclude ramlila_media_3.mp4
+  const images = [...localImages, ...formattedExternal].filter(item => {
+    const src = (item.src || '').toLowerCase();
+    const itemTitle = (item.title || '').toLowerCase();
+    return !src.includes('ramlila_media_3') && !itemTitle.includes('ramlila_media_3');
+  });
 
   const handlePrev = (e) => {
     e.stopPropagation();
@@ -63,148 +174,99 @@ const Gallery = ({ title = "Village Gallery", folder = "slideshow", description 
   };
 
   return (
-    <section className="py-12 bg-gray-50 dark:bg-gray-900 transition-colors">
+    <section className="py-12 bg-white dark:bg-gray-900 transition-colors">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="mb-10 text-center md:text-left">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-bold font-heading text-gray-900 dark:text-white mb-2"
-          >
-            {title.split(' ')[0]} <span className="text-saffron">{title.split(' ').slice(1).join(' ')}</span>
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-gray-600 dark:text-gray-300"
-          >
+        <div className="mb-8 border-b-2 border-saffron pb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-heading">
+            {title}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">
             {description}
-          </motion.p>
+          </p>
         </div>
 
         {images.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-2 md:gap-6">
-            {images.map((item, index) => (
-              <motion.div
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {images.map((item) => (
+              <GalleryCard
                 key={item.id}
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
+                item={item}
                 onClick={() => setSelectedMedia(item)}
-                className="relative rounded-xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group border border-gray-200/50 dark:border-gray-800/50 bg-gray-200 dark:bg-gray-800 flex items-center justify-center cursor-pointer"
-              >
-                {item.isVideo ? (
-                  <video 
-                    src={item.src} 
-                    muted 
-                    autoPlay
-                    loop
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-32 sm:h-48 md:h-80 object-cover md:object-contain transform transition-transform duration-700 group-hover:scale-105 pointer-events-none"
-                  />
-                ) : (
-                  <img 
-                    src={item.src} 
-                    alt={item.title}
-                    loading="lazy"
-                    decoding="async"
-                    referrerPolicy="no-referrer"
-                    className="w-full h-32 sm:h-48 md:h-80 object-cover md:object-contain transform transition-transform duration-700 group-hover:scale-105"
-                  />
-                )}
-
-                {/* Stylish Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2 md:p-6 pointer-events-none">
-                  <h3 className="text-white font-bold text-sm md:text-xl drop-shadow-md">{item.title}</h3>
-                  {item.isVideo && <p className="text-gray-300 text-[10px] md:text-xs mt-1 uppercase tracking-widest">Video</p>}
-                </div>
-                
-              </motion.div>
+              />
             ))}
           </div>
         ) : (
-          <p className="text-center text-gray-500 py-12 bg-white dark:bg-darkCard rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">No media uploaded yet for this event.</p>
+          <p className="text-gray-500 py-8 italic">No media available in this section.</p>
         )}
       </div>
 
       {/* Modal for Zoomed View */}
-      <AnimatePresence>
-        {selectedMedia && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8"
-            onClick={() => setSelectedMedia(null)}
-          >
-            {/* Navigation Arrows */}
-            {images.length > 1 && (
-              <>
-                <button
-                  onClick={handlePrev}
-                  className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 md:p-3 transition-all z-50"
-                >
-                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                  </svg>
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white hover:text-saffron bg-black/50 hover:bg-black/80 rounded-full p-2 md:p-3 transition-all z-50"
-                >
-                  <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </button>
-              </>
-            )}
-
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative max-w-7xl max-h-[90vh] flex flex-col items-center justify-center border-2 md:border-4 border-saffron rounded-lg bg-black"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close Button on the border */}
-              <button
-                onClick={() => setSelectedMedia(null)}
-                className="absolute -top-4 -right-4 md:-top-5 md:-right-5 text-white bg-saffron hover:bg-orange-600 border-2 border-white rounded-full p-1.5 md:p-2 transition-all z-50 shadow-xl"
+      {selectedMedia && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 md:p-8 backdrop-blur-sm"
+          onClick={() => setSelectedMedia(null)}
+        >
+          {images.length > 1 && (
+            <>
+              <button 
+                onClick={handlePrev} 
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/60 hover:bg-black/90 p-3 rounded-full border border-white/20 transition-all z-20"
+                aria-label="Previous media"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+                &larr; Prev
               </button>
+              <button 
+                onClick={handleNext} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/60 hover:bg-black/90 p-3 rounded-full border border-white/20 transition-all z-20"
+                aria-label="Next media"
+              >
+                Next &rarr;
+              </button>
+            </>
+          )}
 
-              {selectedMedia.isVideo ? (
-                <video 
-                  src={selectedMedia.src} 
-                  autoPlay 
-                  controls 
-                  className="w-full h-auto max-h-[85vh] object-contain rounded-sm"
+          <div 
+            className="relative max-w-5xl w-full bg-white dark:bg-gray-900 p-2 sm:p-4 rounded-2xl shadow-2xl flex flex-col items-center overflow-hidden border border-gray-200 dark:border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedMedia(null)}
+              className="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white rounded-full w-9 h-9 font-bold shadow-lg flex items-center justify-center z-20 transition-all"
+              aria-label="Close media preview"
+            >
+              &times;
+            </button>
+
+            {selectedMedia.isVideo ? (
+              (selectedMedia.isYouTube || selectedMedia.youtubeId || selectedMedia.src?.includes('youtube.com') || selectedMedia.src?.includes('youtu.be')) ? (
+                <iframe
+                  src={selectedMedia.embedUrl || `https://www.youtube-nocookie.com/embed/${selectedMedia.youtubeId || (selectedMedia.src?.includes('v=') ? selectedMedia.src.split('v=')[1]?.split('&')[0] : selectedMedia.src?.split('/').pop())}?autoplay=1&rel=0`}
+                  className="w-full h-[60vh] rounded-xl border-0 shadow-lg"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={selectedMedia.title}
+                />
+              ) : selectedMedia.src.includes('drive.google.com') ? (
+                <iframe
+                  src={selectedMedia.src.replace('uc?export=view&id=', 'file/d/') + '/preview'}
+                  className="w-full h-[60vh] rounded-xl"
+                  allow="autoplay"
+                  title={selectedMedia.title}
                 />
               ) : (
-                <img 
-                  src={selectedMedia.src} 
-                  alt={selectedMedia.title}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-auto max-h-[85vh] object-contain rounded-sm"
-                />
-              )}
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent text-center rounded-b-lg pointer-events-none">
-                <h3 className="text-white text-lg md:text-2xl font-bold">{selectedMedia.title}</h3>
-                <p className="text-gray-300 text-sm md:text-base mt-1">{selectedMedia.desc}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <video src={selectedMedia.src} autoPlay controls className="max-h-[70vh] w-auto rounded-xl shadow-md" />
+              )
+            ) : (
+              <img src={selectedMedia.src} alt={selectedMedia.title} className="max-h-[70vh] w-auto rounded-xl shadow-md object-contain" />
+            )}
+            
+            <div className="w-full p-4 text-center border-t border-gray-100 dark:border-gray-800 mt-2">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedMedia.title}</h3>
+              <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm">{selectedMedia.desc}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

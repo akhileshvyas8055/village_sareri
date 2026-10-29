@@ -47,22 +47,22 @@ const PridePage = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/80 z-0"></div>
 
       {/* Hero Section */}
-      <div className="relative pt-28 pb-10 sm:pt-32 sm:pb-14 flex items-center justify-center overflow-hidden z-10">
+      <div className="relative pt-6 pb-2 sm:pt-10 sm:pb-4 flex items-center justify-center overflow-hidden z-10">
         <div className="relative text-center px-4 max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="flex items-center justify-center gap-2.5 mb-2 sm:mb-3">
               <div className="h-[1px] w-16 sm:w-24 bg-gradient-to-r from-transparent to-yellow-500"></div>
               <FaTrophy className="text-yellow-400 text-2xl sm:text-3xl drop-shadow-[0_0_10px_rgba(255,200,0,0.5)]" />
               <div className="h-[1px] w-16 sm:w-24 bg-gradient-to-l from-transparent to-yellow-500"></div>
             </div>
-            <span className="inline-block py-1.5 px-4 rounded-full bg-gradient-to-r from-yellow-500/20 to-saffron/20 text-yellow-400 backdrop-blur-md border border-yellow-500/30 text-xs font-bold tracking-[0.3em] uppercase mb-5 shadow-[0_0_15px_rgba(255,165,0,0.2)]">
+            <span className="inline-block py-1.5 px-4 rounded-full bg-gradient-to-r from-yellow-500/20 to-saffron/20 text-yellow-400 backdrop-blur-md border border-yellow-500/30 text-xs font-bold tracking-[0.3em] uppercase mb-2 sm:mb-3 shadow-[0_0_15px_rgba(255,165,0,0.2)]">
               Wall of Honor
             </span>
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-5 font-heading notranslate drop-shadow-2xl">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-2 sm:mb-3 font-heading notranslate drop-shadow-2xl">
               <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-300">Pride of </span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-saffron">Sareri</span>
             </h1>
@@ -86,7 +86,7 @@ const PridePage = () => {
             <p className="text-gray-400 text-sm">Check back soon for updates!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 pt-10 sm:pt-14">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 pt-3 sm:pt-5">
             {achievements.map((item, index) => (
               <motion.div 
                 key={item.id}

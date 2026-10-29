@@ -15,31 +15,9 @@ const MobileBottomNav = () => {
     { name: t('About'), path: '/about', icon: <FiInfo className="w-[18px] h-[18px]" /> }
   ];
 
-  const [isStandalone, setIsStandalone] = React.useState(false);
-
-  React.useEffect(() => {
-    // Check if the app is running in standalone mode (installed as PWA)
-    const checkStandalone = () => {
-      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      setIsStandalone(isStandaloneMode);
-    };
-
-    checkStandalone();
-    
-    // Optional: listen for changes (if they install it while keeping tab open)
-    window.matchMedia('(display-mode: standalone)').addEventListener('change', checkStandalone);
-    return () => {
-      window.matchMedia('(display-mode: standalone)').removeEventListener('change', checkStandalone);
-    };
-  }, []);
-
-  if (!isStandalone) {
-    return null; // Don't render anything if it's a normal mobile browser
-  }
-
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-[#1A1A1A]/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 z-50 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-      <div className="flex justify-around items-center h-16 px-2">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+      <div className="flex justify-around items-center h-16 px-1">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -48,7 +26,7 @@ const MobileBottomNav = () => {
               `flex flex-col items-center justify-center w-full h-full gap-1 transition-all duration-300 relative ${
                 isActive 
                   ? 'text-saffron font-bold' 
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium'
+                  : 'text-gray-500 hover:text-gray-900 font-medium'
               }`
             }
           >
@@ -63,7 +41,7 @@ const MobileBottomNav = () => {
                 
                 {/* Active Indicator Dot */}
                 {isActive && (
-                  <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-saffron animate-pulse" />
+                  <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-saffron" />
                 )}
               </>
             )}

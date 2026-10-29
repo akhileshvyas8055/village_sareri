@@ -14,6 +14,9 @@ const translations = {
   'News & Complaints': { hi: 'समाचार और शिकायत', en: 'News & Complaints' },
   'News': { hi: 'समाचार', en: 'News' },
   'Complaint': { hi: 'शिकायत', en: 'Complaint' },
+  'Businesses': { hi: 'व्यापार', en: 'Businesses' },
+  'Notices': { hi: 'सूचनाएँ', en: 'Notices' },
+  'Events': { hi: 'मेले व उत्सव', en: 'Events' },
   'Khel Utsav': { hi: 'खेल उत्सव', en: 'Khel Utsav' },
 
   // Footer

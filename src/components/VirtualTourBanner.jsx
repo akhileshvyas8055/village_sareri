@@ -72,7 +72,7 @@ const VirtualTourBanner = () => {
               <span className="text-3xl md:text-4xl lg:text-5xl font-light text-gray-200 mt-2 block">Virtual Tour</span>
             </h2>
             <p className="text-lg md:text-xl font-medium text-gray-300 border-l-4 border-saffron pl-5 py-2 bg-gradient-to-r from-black/20 to-transparent rounded-r-lg">
-              <span className="notranslate">Brahmano Ki Sareri</span> ki sadkon ka <span className="font-bold text-white">live 360° nazar</span> se darshan karo, bilkul real-time experience!
+              <span className="notranslate">Brahmano Ki Sareri</span> ki sadkon aur galiyon ka <span className="font-bold text-white">live 360° nazara dekhein</span>, bilkul real-time experience!
             </p>
           </div>
           

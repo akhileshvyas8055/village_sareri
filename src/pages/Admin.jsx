@@ -1,18 +1,33 @@
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, FiFileText, FiUserCheck, FiClock, FiAward } from 'react-icons/fi';
+import { 
+  FiTrash2, FiPlus, FiSave, FiLogOut, FiBell, FiSend, FiEye, FiEyeOff, 
+  FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, 
+  FiFileText, FiUserCheck, FiClock, FiAward, FiShoppingBag, FiCalendar,
+  FiShield, FiLock, FiCheckCircle, FiAlertCircle, FiToggleLeft, FiToggleRight,
+  FiSettings, FiExternalLink, FiSearch, FiImage
+} from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx-js-style';
 import { collection, addDoc } from 'firebase/firestore';
-import { ref, onValue, set, remove, push, get } from 'firebase/database';
+import { ref, onValue, set, remove, push, get, update } from 'firebase/database';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db, rtdb, storage } from '../firebase';
+import { signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth, db, rtdb, storage, googleProvider } from '../firebase';
 import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
-import ManageCountdown from '../components/Admin/ManageCountdown';
 import ManageAchievements from '../components/Admin/ManageAchievements';
+import ManageEvents from '../components/Admin/ManageEvents';
+import ManageBusinesses from '../components/Admin/ManageBusinesses';
+import ManageNews from '../components/Admin/ManageNews';
+import ManageUsers from '../components/Admin/ManageUsers';
+import ManageGallery from '../components/Admin/ManageGallery';
+import { ConfirmModal, ToastPopup } from '../components/Admin/ThemeModal';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminRole, setAdminRole] = useState(null); // 'admin' | 'sarpanch' | null
+  const [adminUser, setAdminUser] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +35,24 @@ const Admin = () => {
   const [news, setNews] = useState([]);
   const [complaints, setComplaints] = useState([]);
   const [khelRegistrations, setKhelRegistrations] = useState([]);
+  const [khelSettings, setKhelSettings] = useState({
+    isOpen: false,
+    title: 'सरेरी श्याम खेल महोत्सव 2026',
+    subtitle: 'गाँव ब्राह्मणों की सरेरी (भीलवाड़ा) • भव्य खेलकूद महाकुंभ',
+    dates: '15 से 18 मार्च 2026',
+    venue: 'राजकीय उच्च माध्यमिक विद्यालय खेल मैदान, सरेरी',
+    instructions: 'पंजीकरण पूरी तरह निःशुल्क है। सभी खिलाड़ी एवं टीमें नीचे दिए गए फॉर्म से तुरंत रजिस्ट्रेशन करें।'
+  });
+  const [isEditingKhelSettings, setIsEditingKhelSettings] = useState(false);
+  const [khelFormSettings, setKhelFormSettings] = useState({
+    title: 'सरेरी श्याम खेल महोत्सव 2026',
+    subtitle: 'गाँव ब्राह्मणों की सरेरी (भीलवाड़ा) • भव्य खेलकूद महाकुंभ',
+    dates: '15 से 18 मार्च 2026',
+    venue: 'राजकीय उच्च माध्यमिक विद्यालय खेल मैदान, सरेरी',
+    instructions: 'पंजीकरण पूरी तरह निःशुल्क है। सभी खिलाड़ी एवं टीमें नीचे दिए गए फॉर्म से तुरंत रजिस्ट्रेशन करें।'
+  });
+  const [khelSportFilter, setKhelSportFilter] = useState('ALL');
+  const [khelSearchQuery, setKhelSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('news');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifyTitle, setNotifyTitle] = useState('');
@@ -44,7 +77,38 @@ const Admin = () => {
   // Users State
   const [appUsers, setAppUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [errorUsers, setErrorUsers] = useState(null);
+  // Custom Theme-Styled Modal & Toast States
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'हाँ, हटाएं',
+    cancelText: 'रद्द करें',
+    type: 'danger',
+    onConfirm: null,
+    isProcessing: false
+  });
+
+  const [toast, setToast] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
+
+  const showToast = (type, message, title = '') => {
+    setToast({ isOpen: true, type, message, title });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, isOpen: false }));
+    }, 4000);
+  };
+
+  // Restrict Sarpanch tab access to only allowed tabs
+  useEffect(() => {
+    if (adminRole === 'sarpanch' && !['news', 'panchayat', 'events', 'complaints', 'gallery'].includes(activeTab)) {
+      setActiveTab('news');
+    }
+  }, [adminRole, activeTab]);
 
   // Load from Firestore with real-time sync
   useEffect(() => {
@@ -67,10 +131,54 @@ const Admin = () => {
     };
 
     const authStatus = sessionStorage.getItem('sareriAdminAuth');
-    if (authStatus === 'true') {
+    if (authStatus === 'sarpanch') {
       setIsAuthenticated(true);
+      setAdminRole('sarpanch');
+      setActiveTab('news');
+    } else if (authStatus === 'admin' || authStatus === 'true') {
+      setIsAuthenticated(true);
+      setAdminRole('admin');
       fetchUsers();
     }
+
+    // Auth listener to check user role from RTDB and Firestore
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const roleSnap = await get(ref(rtdb, `userRoles/${user.uid}`));
+          let role = roleSnap.exists() ? roleSnap.val()?.role : null;
+          
+          if (!role) {
+            try {
+              const { doc, getDoc } = await import('firebase/firestore');
+              const docSnap = await getDoc(doc(db, 'users', user.uid));
+              if (docSnap.exists()) {
+                role = docSnap.data()?.role;
+              }
+            } catch (fsErr) {
+              console.warn('Firestore role check:', fsErr);
+            }
+          }
+
+          if (role === 'sarpanch') {
+            setIsAuthenticated(true);
+            setAdminRole('sarpanch');
+            setAdminUser(user);
+            sessionStorage.setItem('sareriAdminAuth', 'sarpanch');
+            sessionStorage.setItem('sareriAdminUid', user.uid);
+          } else if (role === 'admin') {
+            setIsAuthenticated(true);
+            setAdminRole('admin');
+            setAdminUser(user);
+            sessionStorage.setItem('sareriAdminAuth', 'admin');
+            sessionStorage.setItem('sareriAdminUid', user.uid);
+            fetchUsers();
+          }
+        } catch (e) {
+          console.warn('Role check error:', e);
+        }
+      }
+    });
 
     // Real-time listener for News
     const unsubNews = onValue(ref(rtdb, 'adminData/news'), (snap) => {
@@ -84,9 +192,12 @@ const Admin = () => {
 
     // Real-time listener for Complaints
     const unsubComplaints = onValue(ref(rtdb, 'adminData/complaints'), (snap) => {
-      const data = snap.val();
-      if (data) {
-        setComplaints(Object.values(data).reverse());
+      if (snap.exists()) {
+        const list = [];
+        snap.forEach((childSnap) => {
+          list.push({ ...childSnap.val(), _key: childSnap.key, id: childSnap.key });
+        });
+        setComplaints(list.reverse());
       } else {
         setComplaints([]);
       }
@@ -94,9 +205,12 @@ const Admin = () => {
 
     // Real-time listener for Khel Registrations
     const unsubRegistrations = onValue(ref(rtdb, 'adminData/khelRegistrations'), (snap) => {
-      const data = snap.val();
-      if (data) {
-        setKhelRegistrations(Object.values(data).reverse());
+      if (snap.exists()) {
+        const list = [];
+        snap.forEach((childSnap) => {
+          list.push({ ...childSnap.val(), _key: childSnap.key, id: childSnap.key });
+        });
+        setKhelRegistrations(list.reverse());
       } else {
         setKhelRegistrations([]);
       }
@@ -107,11 +221,28 @@ const Admin = () => {
       setPollData(snap.val() || null);
     });
 
+    // Real-time listener for Khel Mahotsav Settings
+    const unsubKhelSettings = onValue(ref(rtdb, 'adminData/khelSettings'), (snap) => {
+      const data = snap.val();
+      if (data) {
+        setKhelSettings(prev => ({ ...prev, ...data }));
+        setKhelFormSettings({
+          title: data.title || 'सरेरी श्याम खेल महोत्सव 2026',
+          subtitle: data.subtitle || 'गाँव ब्राह्मणों की सरेरी (भीलवाड़ा) • भव्य खेलकूद महाकुंभ',
+          dates: data.dates || '15 से 18 मार्च 2026',
+          venue: data.venue || 'राजकीय उच्च माध्यमिक विद्यालय खेल मैदान, सरेरी',
+          instructions: data.instructions || 'पंजीकरण पूरी तरह निःशुल्क है। सभी खिलाड़ी एवं टीमें नीचे दिए गए फॉर्म से तुरंत रजिस्ट्रेशन करें।'
+        });
+      }
+    });
+
     return () => {
+      unsubAuth();
       unsubNews();
       unsubComplaints();
       unsubRegistrations();
       unsubPoll();
+      unsubKhelSettings();
     };
   }, []);
 
@@ -120,16 +251,79 @@ const Admin = () => {
     try {
       await signInWithEmailAndPassword(auth, username, password);
       setIsAuthenticated(true);
-      sessionStorage.setItem('sareriAdminAuth', 'true');
+      setAdminRole('admin');
+      sessionStorage.setItem('sareriAdminAuth', 'admin');
     } catch (err) {
       console.error(err);
       alert('Wrong Username or Password! (or account does not exist)');
     }
   };
 
-  const handleLogout = () => {
+  const handleGoogleAdminLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      if (!user) {
+        setGoogleLoading(false);
+        return;
+      }
+
+      // Check role in RTDB userRoles
+      const roleSnap = await get(ref(rtdb, `userRoles/${user.uid}`));
+      let role = roleSnap.exists() ? roleSnap.val()?.role : null;
+
+      // Fallback check in Firestore
+      if (!role) {
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const docSnap = await getDoc(doc(db, 'users', user.uid));
+          if (docSnap.exists()) {
+            role = docSnap.data()?.role;
+          }
+        } catch (fsErr) {
+          console.warn('Firestore role check:', fsErr);
+        }
+      }
+
+      if (role === 'sarpanch') {
+        setIsAuthenticated(true);
+        setAdminRole('sarpanch');
+        setAdminUser(user);
+        sessionStorage.setItem('sareriAdminAuth', 'sarpanch');
+        sessionStorage.setItem('sareriAdminUid', user.uid);
+        setActiveTab('news');
+      } else if (role === 'admin') {
+        setIsAuthenticated(true);
+        setAdminRole('admin');
+        setAdminUser(user);
+        sessionStorage.setItem('sareriAdminAuth', 'admin');
+        sessionStorage.setItem('sareriAdminUid', user.uid);
+      } else {
+        await signOut(auth);
+        sessionStorage.removeItem('sareriAdminAuth');
+        sessionStorage.removeItem('sareriAdminUid');
+        alert(`❌ यह गूगल खाता (${user.email}) सरपंच या एडमिन के रूप में अधिकृत नहीं है।\n\nयदि आप सरपंच हैं, तो कृपया मुख्य व्यवस्थापक से अपने खाते को सरपंच अधिकार असाइन करवाएं।`);
+      }
+    } catch (err) {
+      console.error('Google login error:', err);
+      alert('गूगल लॉगिन में समस्या आई: ' + (err.message || 'त्रुटि'));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
     setIsAuthenticated(false);
+    setAdminRole(null);
+    setAdminUser(null);
     sessionStorage.removeItem('sareriAdminAuth');
+    sessionStorage.removeItem('sareriAdminUid');
+    try {
+      await signOut(auth);
+    } catch (e) {
+      // ignore
+    }
   };
 
   const handleAddNews = () => {
@@ -346,10 +540,28 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteComplaint = async (id) => {
-    if(window.confirm('Are you sure you want to delete this complaint?')) {
-      await remove(ref(rtdb, `adminData/complaints/${id}`));
-    }
+  const handleDeleteComplaint = (id) => {
+    if (!id) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'शिकायत हटाएं?',
+      message: 'क्या आप वाकई इस शिकायत को हटाना चाहते हैं?',
+      confirmText: 'हाँ, हटाएं',
+      cancelText: 'रद्द करें',
+      type: 'danger',
+      isProcessing: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+        try {
+          await remove(ref(rtdb, `adminData/complaints/${id}`));
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+          showToast('success', 'शिकायत सफलतापूर्वक हटा दी गई!', 'सफलता');
+        } catch (err) {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+          showToast('error', 'शिकायत हटाने में समस्या आई: ' + err.message, 'त्रुटि');
+        }
+      }
+    });
   };
 
   const handleUpdateComplaint = async (id, field, value) => {
@@ -359,9 +571,70 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteRegistration = async (id) => {
-    if(window.confirm('Are you sure you want to delete this registration?')) {
-      await remove(ref(rtdb, `adminData/khelRegistrations/${id}`));
+  const handleDeleteRegistration = (id) => {
+    if (!id) {
+      showToast('error', 'त्रुटि: पंजीकरण आईडी नहीं मिली!', 'त्रुटि');
+      return;
+    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'टीम पंजीकरण हटाएं?',
+      message: 'क्या आप वाकई इस टीम पंजीकरण को हटाना (Delete) चाहते हैं? यह क्रिया वापस नहीं ली जा सकती।',
+      confirmText: 'हाँ, हटाएं',
+      cancelText: 'रद्द करें',
+      type: 'danger',
+      isProcessing: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+        try {
+          await remove(ref(rtdb, `adminData/khelRegistrations/${id}`));
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+          showToast('success', 'टीम पंजीकरण सफलतापूर्वक हटा दिया गया!', 'सफलता');
+        } catch (err) {
+          console.error('Error deleting registration:', err);
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+          showToast('error', 'पंजीकरण हटाने में समस्या आई: ' + err.message, 'त्रुटि');
+        }
+      }
+    });
+  };
+
+  const handleToggleKhelRegistration = async () => {
+    const nextStatus = !khelSettings.isOpen;
+    try {
+      await update(ref(rtdb, 'adminData/khelSettings'), {
+        ...khelSettings,
+        isOpen: nextStatus,
+        updatedAt: Date.now()
+      });
+      setKhelSettings(prev => ({ ...prev, isOpen: nextStatus }));
+      showToast(
+        'success',
+        nextStatus 
+          ? 'खेल महोत्सव पंजीकरण होम पेज पर चालू (LIVE) कर दिया गया है!' 
+          : 'खेल महोत्सव पंजीकरण रोक दिया गया है (होम पेज से हटा दिया गया है)।',
+        'खेल महोत्सव स्थिति'
+      );
+    } catch (err) {
+      console.error('Error toggling khel registration:', err);
+      showToast('error', 'त्रुटि: खेल महोत्सव स्थिति अपडेट नहीं हो सकी।', 'त्रुटि');
+    }
+  };
+
+  const handleSaveKhelSettings = async (e) => {
+    e.preventDefault();
+    try {
+      await update(ref(rtdb, 'adminData/khelSettings'), {
+        ...khelSettings,
+        ...khelFormSettings,
+        updatedAt: Date.now()
+      });
+      setKhelSettings(prev => ({ ...prev, ...khelFormSettings }));
+      setIsEditingKhelSettings(false);
+      showToast('success', 'खेल महोत्सव का विवरण सफलतापूर्वक सहेज लिया गया!', 'सेव सफल');
+    } catch (err) {
+      console.error('Error saving khel settings:', err);
+      showToast('error', 'विवरण सहेजने में त्रुटि आई।', 'त्रुटि');
     }
   };
 
@@ -382,28 +655,39 @@ const Admin = () => {
   };
 
   const handleActivatePoll = async () => {
-    if (!newPollQuestion.trim()) return alert("Question is required");
-    if (newPollOptions.some(opt => !opt.trim())) return alert("All options must have text");
+    if (!newPollQuestion.trim()) return showToast('error', 'प्रश्न दर्ज करना आवश्यक है!', 'त्रुटि');
+    if (newPollOptions.some(opt => !opt.trim())) return showToast('error', 'सभी विकल्पों में विवरण भरें!', 'त्रुटि');
     
-    if (window.confirm("This will replace any currently active poll. Are you sure?")) {
-      const poll = {
-        id: Date.now().toString(),
-        question: newPollQuestion,
-        options: newPollOptions.map(text => ({ text, votes: 0 })),
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-      set(ref(rtdb, 'adminData/poll'), poll)
-        .then(() => {
-          alert("Poll Activated Successfully!");
+    setConfirmModal({
+      isOpen: true,
+      title: 'जनमत पोल सक्रिय करें?',
+      message: 'यह वर्तमान में चल रहे सक्रिय पोल को बदल देगा। क्या आप जारी रखना चाहते हैं?',
+      confirmText: 'हाँ, सक्रिय करें',
+      cancelText: 'रद्द करें',
+      type: 'warning',
+      isProcessing: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+        const poll = {
+          id: Date.now().toString(),
+          question: newPollQuestion,
+          options: newPollOptions.map(text => ({ text, votes: 0 })),
+          isActive: true,
+          createdAt: new Date().toISOString()
+        };
+        try {
+          await set(ref(rtdb, 'adminData/poll'), poll);
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+          showToast('success', 'जनमत पोल सफलतापूर्वक सक्रिय कर दिया गया!', 'सफलता');
           setNewPollQuestion('');
           setNewPollOptions(['', '']);
-        })
-        .catch(err => {
+        } catch (err) {
           console.error("Firebase Error:", err);
-          alert("Failed to activate poll. Error: " + err.message);
-        });
-    }
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+          showToast('error', 'पोल सक्रिय करने में त्रुटि: ' + err.message, 'त्रुटि');
+        }
+      }
+    });
   };
 
   const handleDeactivatePoll = async () => {
@@ -528,42 +812,88 @@ const Admin = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 text-gray-900">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
-          <h2 className="text-2xl font-bold text-center mb-6">Admin Panel</h2>
-          <div className="mb-4">
-            <input 
-              type="text" 
-              placeholder="Enter Username" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-saffron"
-            />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-4 text-gray-900">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-gray-100 relative overflow-hidden">
+          {/* Top saffron accent bar */}
+          <div className="h-2 w-full bg-gradient-to-r from-saffron via-amber-400 to-orange-600 absolute top-0 left-0"></div>
+
+          {/* Crest / Logo */}
+          <div className="text-center mb-6 pt-2">
+            <img src="/photos/About.jpeg" alt="Logo" className="w-16 h-16 rounded-full mx-auto mb-3 object-cover border-4 border-orange-100 shadow-md" />
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+              ग्राम पंचायत सरेरी
+            </h2>
+            <p className="text-xs font-semibold text-gray-500 mt-1">
+              प्रशासनिक एवं सरपंच नियंत्रण पोर्टल (Admin & Sarpanch Portal)
+            </p>
           </div>
-          <div className="relative mb-4">
-            <input 
-              type={showPassword ? "text" : "password"} 
-              placeholder="Enter Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-saffron pr-12"
-            />
-            <button 
+
+          {/* Quick 1-Click Google Sign In for Sarpanch & Admin */}
+          <div className="mb-6">
+            <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-1"
-              title={showPassword ? "Hide password" : "Show password"}
+              onClick={handleGoogleAdminLogin}
+              disabled={googleLoading}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-saffron text-gray-800 font-bold text-sm shadow-sm transition-all transform active:scale-98 disabled:opacity-50"
             >
-              {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              <FcGoogle className="w-6 h-6 shrink-0" />
+              <span>{googleLoading ? 'लॉगिन सत्यापित हो रहा है...' : 'Google से लॉगिन करें (सरपंच / व्यवस्थापक)'}</span>
             </button>
+            <p className="text-[11px] text-center text-gray-500 mt-2">
+              अधिकृत सरपंच व व्यवस्थापक अपने जीमेल से सीधे लॉगिन कर सकते हैं।
+            </p>
           </div>
-          <button type="submit" className="w-full btn-primary py-3 rounded-lg mt-2">
-            Login
-          </button>
-          <div className="mt-4 text-center">
-            <Link className="text-sm text-gray-500 hover:text-saffron" to="/">Go back to Home</Link>
+
+          <div className="relative flex py-2 items-center mb-6">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink mx-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              या पासवर्ड से लॉगिन करें
+            </span>
+            <div className="flex-grow border-t border-gray-200"></div>
           </div>
-        </form>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">यूज़रनेम / ईमेल</label>
+              <input 
+                type="text" 
+                placeholder="Admin username or email" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-saffron text-sm transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">पासवर्ड</label>
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-saffron text-sm pr-12 transition-all"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none p-1"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
+            </div>
+            <button type="submit" className="w-full bg-gradient-to-r from-saffron to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-500/20 transition-all text-sm transform active:scale-98">
+              मुख्य एडमिन लॉगिन (Super Admin Login)
+            </button>
+          </form>
+
+          <div className="mt-6 text-center pt-4 border-t border-gray-100">
+            <Link className="text-xs font-semibold text-gray-500 hover:text-saffron transition-colors" to="/">
+              ← वेबसाइट के मुख्य पृष्ठ पर लौटें (Home)
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -575,52 +905,100 @@ const Admin = () => {
         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0">
           <Link to="/" className="flex items-center gap-3">
             <img src="/photos/About.jpeg" alt="Logo" className="w-10 h-10 rounded-full object-cover border-2 border-saffron shadow-sm" />
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight">Admin<span className="text-saffron">Panel</span></h1>
+            <div>
+              <h1 className="text-base font-bold text-gray-800 tracking-tight leading-tight">सरेरी<span className="text-saffron"> पोर्टल</span></h1>
+              <span className="text-[10px] text-gray-400 font-semibold block">व्यवस्थापक नियंत्रण</span>
+            </div>
           </Link>
         </div>
+
+        {/* Current User Role Badge */}
+        <div className="p-4 pb-2">
+          {adminRole === 'sarpanch' ? (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2.5">
+              <span className="text-xl">👑</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-amber-900 leading-tight">सरपंच पोर्टल</div>
+                <div className="text-[10px] text-amber-700 truncate font-medium">
+                  {adminUser?.displayName || adminUser?.email || 'सरपंच साहब'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 flex items-center gap-2.5">
+              <span className="text-xl">🛡️</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-purple-900 leading-tight">मुख्य व्यवस्थापक</div>
+                <div className="text-[10px] text-purple-700 truncate font-medium">
+                  {adminUser?.displayName || adminUser?.email || 'Super Admin'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-2 px-2">Main Menu</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">
+            {adminRole === 'sarpanch' ? 'सरपंच विभाग (Sarpanch Modules)' : 'मुख्य मेन्यू (Main Menu)'}
+          </p>
+          
+          {/* Tabs visible to BOTH Sarpanch & Admin */}
           <button onClick={() => setActiveTab('news')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'news' ? 'bg-orange-50 text-saffron shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiFileText className={`w-5 h-5 ${activeTab === 'news' ? 'text-saffron' : 'text-gray-400'}`} /> Manage News
+            <FiFileText className={`w-5 h-5 ${activeTab === 'news' ? 'text-saffron' : 'text-gray-400'}`} /> समाचार प्रबंधन (News)
           </button>
           <button onClick={() => setActiveTab('panchayat')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'panchayat' ? 'bg-green-50 text-green-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiUsers className={`w-5 h-5 ${activeTab === 'panchayat' ? 'text-green-700' : 'text-gray-400'}`} /> Panchayat Info
+            <FiUsers className={`w-5 h-5 ${activeTab === 'panchayat' ? 'text-green-700' : 'text-gray-400'}`} /> ग्राम पंचायत व नोटिस
           </button>
-          
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6 px-2">User Data</p>
+          <button onClick={() => setActiveTab('events')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'events' ? 'bg-amber-50 text-amber-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiCalendar className={`w-5 h-5 ${activeTab === 'events' ? 'text-amber-700' : 'text-gray-400'}`} /> मेले व उत्सव (Events)
+          </button>
           <button onClick={() => setActiveTab('complaints')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'complaints' ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
             <div className="flex items-center gap-3">
-              <FiMessageSquare className={`w-5 h-5 ${activeTab === 'complaints' ? 'text-red-600' : 'text-gray-400'}`} /> Complaints
+              <FiMessageSquare className={`w-5 h-5 ${activeTab === 'complaints' ? 'text-red-600' : 'text-gray-400'}`} />
+              <span>शिकायत निवारण (Complaints)</span>
             </div>
             {complaints.length > 0 && <span className="bg-red-100 text-red-600 text-[10px] py-1 px-2 rounded-full font-bold">{complaints.length}</span>}
           </button>
-          <button onClick={() => setActiveTab('khel')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'khel' ? 'bg-orange-50 text-orange-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <div className="flex items-center gap-3">
-              <FiActivity className={`w-5 h-5 ${activeTab === 'khel' ? 'text-orange-600' : 'text-gray-400'}`} /> Khel Registrations
-            </div>
-            {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
+          <button onClick={() => setActiveTab('gallery')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'gallery' ? 'bg-cyan-50 text-cyan-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiImage className={`w-5 h-5 ${activeTab === 'gallery' ? 'text-cyan-700' : 'text-gray-400'}`} /> फोटो व वीडियो गैलरी (Gallery)
           </button>
 
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6 px-2">Community & Engagement</p>
-          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'users' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiUserCheck className={`w-5 h-5 ${activeTab === 'users' ? 'text-blue-600' : 'text-gray-400'}`} /> Registered Users
-          </button>
-          <button onClick={() => setActiveTab('notifications')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiBell className={`w-5 h-5 ${activeTab === 'notifications' ? 'text-indigo-600' : 'text-gray-400'}`} /> Push Notifications
-          </button>
-          <button onClick={() => setActiveTab('poll')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiPieChart className={`w-5 h-5 ${activeTab === 'poll' ? 'text-purple-600' : 'text-gray-400'}`} /> Manage Poll
-          </button>
-          <button onClick={() => setActiveTab('countdown')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'countdown' ? 'bg-yellow-50 text-yellow-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiClock className={`w-5 h-5 ${activeTab === 'countdown' ? 'text-yellow-600' : 'text-gray-400'}`} /> Manage Countdown
-          </button>
-          <button onClick={() => setActiveTab('achievements')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <FiAward className={`w-5 h-5 ${activeTab === 'achievements' ? 'text-pink-600' : 'text-gray-400'}`} /> <span className="notranslate" translate="no">Pride of Sareri</span>
-          </button>
+          {/* Super Admin ONLY Tabs */}
+          {adminRole === 'admin' && (
+            <>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6 px-2">व्यापार व नागरिक अधिकार</p>
+              <button onClick={() => setActiveTab('businesses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'businesses' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <FiShoppingBag className={`w-5 h-5 ${activeTab === 'businesses' ? 'text-blue-700' : 'text-gray-400'}`} /> Business Directory
+              </button>
+              <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'users' ? 'bg-purple-50 text-purple-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <FiShield className={`w-5 h-5 ${activeTab === 'users' ? 'text-purple-700' : 'text-gray-400'}`} /> नागरिक रोल (User Access)
+              </button>
+
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6 px-2">नागरिक डेटा व सेवाएँ</p>
+              <button onClick={() => setActiveTab('khel')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'khel' ? 'bg-orange-50 text-orange-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <div className="flex items-center gap-3">
+                  <FiActivity className={`w-5 h-5 ${activeTab === 'khel' ? 'text-orange-600' : 'text-gray-400'}`} /> खेल महोत्सव व पंजीकरण
+                </div>
+                {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
+              </button>
+
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 mt-6 px-2">समुदाय व सहभागिता</p>
+              <button onClick={() => setActiveTab('notifications')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <FiBell className={`w-5 h-5 ${activeTab === 'notifications' ? 'text-indigo-600' : 'text-gray-400'}`} /> पुश नोटिफिकेशन
+              </button>
+              <button onClick={() => setActiveTab('poll')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <FiPieChart className={`w-5 h-5 ${activeTab === 'poll' ? 'text-purple-600' : 'text-gray-400'}`} /> जनमत पोल (Poll)
+              </button>
+              <button onClick={() => setActiveTab('achievements')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                <FiAward className={`w-5 h-5 ${activeTab === 'achievements' ? 'text-pink-600' : 'text-gray-400'}`} /> <span className="notranslate" translate="no">Pride of Sareri</span>
+              </button>
+            </>
+          )}
         </nav>
+
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
           <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-gray-600 hover:text-white hover:bg-red-500 w-full py-2.5 rounded-lg transition-all font-bold text-sm shadow-sm border border-gray-200 hover:border-red-500">
-            <FiLogOut className="w-4 h-4" /> Sign Out
+            <FiLogOut className="w-4 h-4" /> साइन आउट (Sign Out)
           </button>
         </div>
       </aside>
@@ -629,34 +1007,154 @@ const Admin = () => {
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC]">
         
         {/* Mobile Header */}
-        <header className="bg-white shadow-sm z-10 p-4 flex justify-between items-center md:hidden border-b border-gray-200">
-          <div className="flex items-center gap-3">
+        <header className="bg-white shadow-sm z-10 p-3 sm:p-4 flex justify-between items-center md:hidden border-b border-gray-200">
+          <div className="flex items-center gap-2.5">
             <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-              <FiMenu className="w-6 h-6" />
+              <FiMenu className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-bold text-gray-800">Admin<span className="text-saffron">Panel</span></h1>
+            <div>
+              <h1 className="text-sm sm:text-base font-bold text-gray-800 leading-tight">
+                {adminRole === 'sarpanch' ? '👑 सरपंच पोर्टल' : 'AdminPanel'}
+              </h1>
+              <p className="text-[10px] text-gray-400 font-medium truncate max-w-[150px]">
+                {adminUser?.displayName || adminUser?.email || 'सरेरी ग्राम पोर्टल'}
+              </p>
+            </div>
           </div>
-          {activeTab === 'news' && (
-            <button onClick={handleSave} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold transition-colors text-xs shadow-sm">
-              <FiSave /> Save
-            </button>
-          )}
+          <button 
+            onClick={handleLogout}
+            className="px-3 py-1.5 rounded-lg text-red-600 hover:bg-red-50 text-xs font-bold border border-red-200 flex items-center gap-1"
+            title="लॉगआउट"
+          >
+            <FiLogOut className="w-3.5 h-3.5" />
+            <span>लॉगआउट</span>
+          </button>
         </header>
 
-        {/* Desktop Header */}
-        <header className="bg-white shadow-sm z-10 px-8 py-5 hidden md:flex justify-between items-center border-b border-gray-100">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 capitalize tracking-tight">
-              {activeTab === 'khel' ? 'Khel Registrations' : activeTab === 'panchayat' ? 'Gram Panchayat' : activeTab} Management
-            </h2>
-            <p className="text-sm text-gray-500 mt-1 font-medium">Manage and update village information seamlessly.</p>
-          </div>
-          <div className="flex items-center gap-4">
-            {activeTab === 'news' && (
-              <button onClick={handleSave} className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-green-500/30 transform hover:-translate-y-0.5">
-                <FiSave className="w-5 h-5" /> Save Changes
+        {/* Mobile Quick-Switch Horizontal Tab Bar */}
+        <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-1.5 overflow-x-auto md:hidden no-scrollbar">
+          <button
+            onClick={() => setActiveTab('news')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'news' ? 'bg-saffron text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            📰 समाचार
+          </button>
+          <button
+            onClick={() => setActiveTab('panchayat')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'panchayat' ? 'bg-green-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            🏛️ पंचायत
+          </button>
+          <button
+            onClick={() => setActiveTab('events')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'events' ? 'bg-amber-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            🚩 मेले व उत्सव
+          </button>
+          <button
+            onClick={() => setActiveTab('complaints')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'complaints' ? 'bg-red-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            💬 शिकायतें ({complaints.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('gallery')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'gallery' ? 'bg-cyan-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            📸 गैलरी
+          </button>
+          {adminRole === 'admin' && (
+            <>
+              <button
+                onClick={() => setActiveTab('businesses')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  activeTab === 'businesses' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                🛍️ दुकान
               </button>
-            )}
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  activeTab === 'users' ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                👥 नागरिक रोल
+              </button>
+              <button
+                onClick={() => setActiveTab('khel')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  activeTab === 'khel' ? 'bg-orange-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                🏃 खेल ({khelRegistrations.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  activeTab === 'notifications' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                🔔 पुश
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Desktop Header */}
+        <header className="bg-white shadow-sm z-10 px-8 py-4 hidden md:flex justify-between items-center border-b border-gray-100">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-gray-800 capitalize tracking-tight">
+                {activeTab === 'businesses' ? 'Business Directory' : 
+                 activeTab === 'khel' ? 'Khel Registrations' : 
+                 activeTab === 'panchayat' ? 'Gram Panchayat & Notices' : 
+                 activeTab === 'events' ? 'Events & Melas' : 
+                 activeTab === 'users' ? 'Registered Citizens & Roles' : 
+                 activeTab === 'news' ? 'News & Announcements' : activeTab}
+              </h2>
+              {adminRole === 'sarpanch' ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  👑 सरपंच मोड
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300">
+                  🛡️ पूर्ण एडमिन
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1 font-medium">
+              {adminRole === 'sarpanch' 
+                ? 'गाँव के समाचार, डिजिटल नोटिस बोर्ड एवं मेले/उत्सव प्रबंधित करें।' 
+                : 'गाँव का संपूर्ण डिजिटल प्रबंधन एवं नागरिक अधिकार।'
+              }
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+            >
+              वेबसाइट देखें ↗
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-colors"
+            >
+              <FiLogOut className="w-3.5 h-3.5" />
+              <span>साइन आउट</span>
+            </button>
           </div>
         </header>
 
@@ -668,46 +1166,64 @@ const Admin = () => {
               <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white">
                 <div className="flex items-center gap-3">
                   <img src="/photos/About.jpeg" alt="Logo" className="w-8 h-8 rounded-full border border-saffron" />
-                  <h1 className="text-lg font-bold text-gray-800">Menu</h1>
+                  <div>
+                    <h1 className="text-base font-bold text-gray-800">
+                      {adminRole === 'sarpanch' ? '👑 सरपंच पोर्टल' : 'Admin Menu'}
+                    </h1>
+                    <span className="text-[10px] text-gray-400 font-semibold">{adminUser?.email || ''}</span>
+                  </div>
                 </div>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
                   <FiX className="w-6 h-6" />
                 </button>
               </div>
+
               <nav className="flex-1 overflow-y-auto p-4 space-y-2">
                 <button onClick={() => {setActiveTab('news'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'news' ? 'bg-orange-50 text-saffron' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiFileText className="w-5 h-5" /> Manage News
+                  <FiFileText className="w-5 h-5" /> समाचार प्रबंधन
                 </button>
                 <button onClick={() => {setActiveTab('panchayat'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'panchayat' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiUsers className="w-5 h-5" /> Panchayat Info
+                  <FiUsers className="w-5 h-5" /> पंचायत व नोटिस
+                </button>
+                <button onClick={() => {setActiveTab('events'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'events' ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiCalendar className="w-5 h-5" /> मेले व उत्सव
                 </button>
                 <button onClick={() => {setActiveTab('complaints'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'complaints' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <div className="flex items-center gap-3"><FiMessageSquare className="w-5 h-5" /> Complaints</div>
+                  <div className="flex items-center gap-3"><FiMessageSquare className="w-5 h-5" /> शिकायतें (Complaints)</div>
                   {complaints.length > 0 && <span className="bg-red-100 text-red-600 text-[10px] py-1 px-2 rounded-full font-bold">{complaints.length}</span>}
                 </button>
-                <button onClick={() => {setActiveTab('khel'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'khel' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <div className="flex items-center gap-3"><FiActivity className="w-5 h-5" /> Khel Registrations</div>
-                  {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
+                <button onClick={() => {setActiveTab('gallery'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'gallery' ? 'bg-cyan-50 text-cyan-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiImage className="w-5 h-5" /> फोटो व वीडियो गैलरी (Gallery)
                 </button>
-                <button onClick={() => {setActiveTab('users'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'users' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiUserCheck className="w-5 h-5" /> Registered Users
-                </button>
-                <button onClick={() => {setActiveTab('notifications'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiBell className="w-5 h-5" /> Notifications
-                </button>
-                <button onClick={() => {setActiveTab('poll'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiPieChart className="w-5 h-5" /> Manage Poll
-                </button>
-                <button onClick={() => {setActiveTab('countdown'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'countdown' ? 'bg-yellow-50 text-yellow-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiClock className="w-5 h-5" /> Manage Countdown
-                </button>
-                <button onClick={() => {setActiveTab('achievements'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <FiAward className="w-5 h-5" /> <span className="notranslate" translate="no">Pride of Sareri</span>
-                </button>
+
+                {adminRole === 'admin' && (
+                  <>
+                    <button onClick={() => {setActiveTab('businesses'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'businesses' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <FiShoppingBag className="w-5 h-5" /> Business Directory
+                    </button>
+                    <button onClick={() => {setActiveTab('users'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'users' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <FiShield className="w-5 h-5" /> नागरिक रोल (Roles)
+                    </button>
+                    <button onClick={() => {setActiveTab('khel'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'khel' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <div className="flex items-center gap-3"><FiActivity className="w-5 h-5" /> खेल पंजीकरण</div>
+                      {khelRegistrations.length > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] py-1 px-2 rounded-full font-bold">{khelRegistrations.length}</span>}
+                    </button>
+                    <button onClick={() => {setActiveTab('notifications'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'notifications' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <FiBell className="w-5 h-5" /> नोटिफिकेशन्स
+                    </button>
+                    <button onClick={() => {setActiveTab('poll'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'poll' ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <FiPieChart className="w-5 h-5" /> जनमत पोल
+                    </button>
+                    <button onClick={() => {setActiveTab('achievements'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'achievements' ? 'bg-pink-50 text-pink-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <FiAward className="w-5 h-5" /> Pride of Sareri
+                    </button>
+                  </>
+                )}
               </nav>
+
               <div className="p-4 border-t border-gray-100">
                 <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-white bg-red-500 hover:bg-red-600 w-full py-3 rounded-xl transition-colors font-bold shadow-sm">
-                  <FiLogOut /> Sign Out
+                  <FiLogOut /> साइन आउट
                 </button>
               </div>
             </aside>
@@ -717,6 +1233,18 @@ const Admin = () => {
         {/* Scrollable Content Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
           <div className="max-w-6xl mx-auto pb-10">
+        {activeTab === 'businesses' && (
+          <div className="mb-10">
+            <ManageBusinesses />
+          </div>
+        )}
+
+        {activeTab === 'events' && (
+          <div className="mb-10">
+            <ManageEvents />
+          </div>
+        )}
+
 
         {activeTab === 'panchayat' && (
           <div className="mb-10">
@@ -725,150 +1253,15 @@ const Admin = () => {
           </div>
         )}
 
-        {activeTab === 'users' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Registered Users</h2>
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">{appUsers.length} Users</span>
-            </div>
-            
-            {loadingUsers ? (
-              <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron"></div>
-              </div>
-            ) : errorUsers ? (
-              <div className="text-center py-10 bg-red-50 rounded-xl shadow-sm border border-red-200 text-red-600">
-                <p className="font-bold">Error loading users:</p>
-                <p className="text-sm mt-2">{errorUsers}</p>
-                <button onClick={() => window.location.reload()} className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg text-sm">Retry</button>
-              </div>
-            ) : appUsers.length === 0 ? (
-              <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500">
-                No registered users found.
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-gray-600">
-                    <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-100">
-                      <tr>
-                        <th className="px-6 py-4">Profile</th>
-                        <th className="px-6 py-4">Name</th>
-                        <th className="px-6 py-4">Email Address</th>
-                        <th className="px-6 py-4">Registration Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {appUsers.map((u) => (
-                        <tr key={u.uid} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4">
-                            <img src={u.photoURL || 'https://via.placeholder.com/40'} alt="Profile" className="w-10 h-10 rounded-full border border-gray-200" />
-                          </td>
-                          <td className="px-6 py-4 font-bold text-gray-900">{u.displayName || 'No Name'}</td>
-                          <td className="px-6 py-4">{u.email}</td>
-                          <td className="px-6 py-4">{new Date(u.creationTime).toLocaleDateString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+        {activeTab === 'users' && adminRole === 'admin' && (
+          <div className="mb-10">
+            <ManageUsers />
           </div>
         )}
 
         {activeTab === 'news' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">News List</h2>
-              <button onClick={handleAddNews} className="flex items-center gap-2 bg-saffron text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">
-                <FiPlus /> Add New Update
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {news.length === 0 && (
-                <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500">
-                  No news updates yet. Click "Add New Update" to create one.
-                </div>
-              )}
-
-              {news.map(item => (
-                <div key={item.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 relative group">
-                  <button 
-                    onClick={() => handleDeleteNews(item.id)}
-                    className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Update"
-                  >
-                    <FiTrash2 />
-                  </button>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-10">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Title</label>
-                      <input 
-                        type="text" 
-                        value={item.title} 
-                        onChange={(e) => handleUpdateNews(item.id, 'title', e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-saffron"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Date</label>
-                      <input 
-                        type="text" 
-                        value={item.date} 
-                        onChange={(e) => handleUpdateNews(item.id, 'date', e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-saffron"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Type (Notice/Event/Announcement)</label>
-                      <select 
-                        value={item.type} 
-                        onChange={(e) => handleUpdateNews(item.id, 'type', e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-saffron bg-white"
-                      >
-                        <option value="Notice">Notice</option>
-                        <option value="Event">Event</option>
-                        <option value="Announcement">Announcement</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Upload Photo (Optional)</label>
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(item.id, e.target.files[0])}
-                        disabled={uploadingImageId === item.id}
-                        className="w-full px-3 py-1.5 border rounded-lg text-sm bg-gray-50 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-saffron file:text-white hover:file:bg-orange-600 transition-all cursor-pointer"
-                      />
-                      {uploadingImageId === item.id && <p className="text-xs text-saffron mt-1 font-bold animate-pulse">Uploading photo...</p>}
-                      {item.image && uploadingImageId !== item.id && <p className="text-xs text-green-600 mt-1 font-bold">✓ Photo added successfully</p>}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Description</label>
-                    <textarea 
-                      value={item.desc} 
-                      onChange={(e) => handleUpdateNews(item.id, 'desc', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-saffron min-h-[100px]"
-                    />
-                  </div>
-
-                  <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
-                    <button 
-                      onClick={() => handleCirculateNews(item)}
-                      disabled={isSending}
-                      className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-bold transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FiBell className="w-4 h-4" /> {isSending ? 'Sending...' : 'Broadcast Notification'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="mb-10">
+            <ManageNews isSarpanch={adminRole === 'sarpanch'} />
           </div>
         )}
 
@@ -952,61 +1345,287 @@ const Admin = () => {
         )}
 
         {activeTab === 'khel' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Khel Maha Utsav Registrations</h2>
-              <button 
-                onClick={() => downloadExcel(khelRegistrations, 'Khel_Registrations', 'khel')}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-md shadow-green-600/20"
-              >
-                Download Excel Sheet
-              </button>
+          <div className="space-y-6">
+            {/* TOP HEADER & CONTROLS */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <span>🏆 सरेरी श्याम खेल महोत्सव 2026</span>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
+                    khelSettings.isOpen 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
+                      : 'bg-gray-100 text-gray-600 border-gray-300'
+                  }`}>
+                    {khelSettings.isOpen ? '🟢 LIVE ON HOMEPAGE' : '⚪ CLOSED (INACTIVE)'}
+                  </span>
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  होम पेज पर खेल महोत्सव पंजीकरण फॉर्म शुरू/बंद करें एवं सभी पंजीकृत टीमों की सूची देखें।
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Link
+                  to="/#khel-mahotsav"
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all"
+                >
+                  <FiExternalLink className="w-3.5 h-3.5" />
+                  <span>होम पेज पर देखें</span>
+                </Link>
+
+                <button
+                  onClick={() => setIsEditingKhelSettings(!isEditingKhelSettings)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold transition-all"
+                >
+                  <FiSettings className="w-3.5 h-3.5" />
+                  <span>{isEditingKhelSettings ? 'विवरण छुपाएं' : 'टूर्नामेंट विवरण संपादित करें'}</span>
+                </button>
+
+                <button 
+                  onClick={() => downloadExcel(khelRegistrations, 'Khel_Registrations', 'khel')}
+                  className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-xl hover:bg-green-800 transition-colors text-xs sm:text-sm font-bold shadow-md shadow-green-700/20"
+                >
+                  Download Excel
+                </button>
+              </div>
             </div>
-            <div className="space-y-6">
-              {khelRegistrations.length === 0 && (
-                <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500">
-                  No registrations received yet.
+
+            {/* PROMINENT TOGGLE SWITCH BANNER */}
+            <div className={`p-5 sm:p-6 rounded-2xl border transition-all ${
+              khelSettings.isOpen
+                ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50/50 border-emerald-300 shadow-sm'
+                : 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50/50 border-amber-300 shadow-sm'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{khelSettings.isOpen ? '🟢' : '⏸️'}</span>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                      {khelSettings.isOpen 
+                        ? 'खेल महोत्सव पंजीकरण होम पेज पर चालू है (Registrations OPEN)' 
+                        : 'खेल महोत्सव पंजीकरण अभी बंद है (Registrations CLOSED)'
+                      }
+                    </h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600 max-w-2xl leading-relaxed">
+                    {khelSettings.isOpen
+                      ? 'गाँव के सभी युवा, खिलाड़ी व टीमें वेबसाइट के मुख्य पृष्ठ (Home page) से सीधे अपनी टीम रजिस्टर कर सकते हैं।'
+                      : 'वर्तमान में होम पेज पर खेल महोत्सव का फॉर्म छिपा हुआ है। जब आप तैयार हों, तब यहाँ से "पंजीकरण शुरू करें" दबाएं।'
+                    }
+                  </p>
                 </div>
-              )}
-              {khelRegistrations.map(reg => (
-                <div key={reg.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 relative">
-                  <button 
-                    onClick={() => handleDeleteRegistration(reg.id)}
-                    className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Registration"
+
+                <button
+                  onClick={handleToggleKhelRegistration}
+                  className={`inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 shrink-0 ${
+                    khelSettings.isOpen
+                      ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/30'
+                      : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-emerald-600/30'
+                  }`}
+                >
+                  {khelSettings.isOpen ? (
+                    <>
+                      <FiToggleRight className="w-5 h-5 text-red-200" />
+                      <span>🛑 पंजीकरण रोकें / बंद करें (Turn OFF)</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiToggleLeft className="w-5 h-5 text-emerald-200" />
+                      <span>🚀 होम पेज पर पंजीकरण शुरू करें (Start / Turn ON)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* EDIT TOURNAMENT DETAILS FORM (Collapsible) */}
+            {isEditingKhelSettings && (
+              <form onSubmit={handleSaveKhelSettings} className="bg-white p-6 rounded-2xl border border-orange-200 shadow-sm space-y-4">
+                <h3 className="text-base font-bold text-gray-900 border-b pb-2">
+                  टूर्नामेंट विवरण (Tournament Information & Venue)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+                  <div>
+                    <label className="block font-semibold text-gray-700 mb-1">प्रतियोगिता का नाम (Title)</label>
+                    <input
+                      type="text"
+                      value={khelFormSettings.title}
+                      onChange={(e) => setKhelFormSettings({ ...khelFormSettings, title: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-gray-700 mb-1">उपशीर्षक (Subtitle)</label>
+                    <input
+                      type="text"
+                      value={khelFormSettings.subtitle}
+                      onChange={(e) => setKhelFormSettings({ ...khelFormSettings, subtitle: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-gray-700 mb-1">तारीख (Dates)</label>
+                    <input
+                      type="text"
+                      value={khelFormSettings.dates}
+                      onChange={(e) => setKhelFormSettings({ ...khelFormSettings, dates: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-gray-700 mb-1">खेल मैदान / स्थान (Venue)</label>
+                    <input
+                      type="text"
+                      value={khelFormSettings.venue}
+                      onChange={(e) => setKhelFormSettings({ ...khelFormSettings, venue: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-gray-700 mb-1">निर्देश या घोषणा (Notice / Guidelines)</label>
+                    <textarea
+                      value={khelFormSettings.instructions}
+                      onChange={(e) => setKhelFormSettings({ ...khelFormSettings, instructions: e.target.value })}
+                      rows={2}
+                      className="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingKhelSettings(false)}
+                    className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold"
                   >
-                    <FiTrash2 />
+                    रद्द करें
                   </button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Team Name</p>
-                      <p className="font-bold text-gray-900">{reg.teamName}</p>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md"
+                  >
+                    विवरण सहेजें (Save Changes)
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* SEARCH & SPORT FILTER BAR */}
+            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {['ALL', 'Cricket', 'Volleyball', 'Kabaddi', 'Tug of War', 'Athletics', 'Badminton', 'Kho-Kho'].map(sp => (
+                  <button
+                    key={sp}
+                    onClick={() => setKhelSportFilter(sp)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      khelSportFilter === sp 
+                        ? 'bg-orange-600 text-white shadow-sm' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {sp === 'ALL' ? `सभी टीमें (${khelRegistrations.length})` : sp}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative min-w-[220px]">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="टीम, कप्तान या नंबर खोजें..."
+                  value={khelSearchQuery}
+                  onChange={(e) => setKhelSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50"
+                />
+              </div>
+            </div>
+
+            {/* REGISTERED TEAMS LIST */}
+            <div className="space-y-4">
+              {(() => {
+                const filtered = khelRegistrations.filter(reg => {
+                  const matchSport = khelSportFilter === 'ALL' || reg.sport?.toLowerCase() === khelSportFilter.toLowerCase();
+                  const q = khelSearchQuery.toLowerCase().trim();
+                  const matchSearch = !q || 
+                    reg.teamName?.toLowerCase().includes(q) || 
+                    reg.captainName?.toLowerCase().includes(q) || 
+                    reg.contact?.includes(q) ||
+                    reg.village?.toLowerCase().includes(q) ||
+                    reg.regId?.toLowerCase().includes(q);
+                  return matchSport && matchSearch;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-200 text-gray-500">
+                      {khelRegistrations.length === 0 
+                        ? 'अभी तक कोई खेल पंजीकरण प्राप्त नहीं हुआ है।' 
+                        : 'इस फ़िल्टर या खोज शब्द के लिए कोई टीम नहीं मिली।'}
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Captain Name</p>
-                      <p className="font-bold text-gray-900">{reg.captainName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Sport Category</p>
-                      <p className="font-bold text-orange-600">{reg.sport}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Contact</p>
-                      <p className="text-gray-700">{reg.contact}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Registration Date</p>
-                      <p className="text-gray-700">{reg.date}</p>
-                    </div>
-                    <div className="md:col-span-2 lg:col-span-3 mt-2">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Player List</p>
-                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 mt-1">
-                        <p className="text-gray-700 text-sm whitespace-pre-wrap">{reg.playerNames}</p>
+                  );
+                }
+
+                return filtered.map(reg => (
+                  <div key={reg.id || reg.regId} className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-orange-300 transition-all relative">
+                    <button 
+                      onClick={() => handleDeleteRegistration(reg._key || reg.id || reg.key)}
+                      className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="पंजीकरण हटाएं"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pr-10">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+                            {reg.regId || `REG-${reg.id?.toString().slice(-4)}`}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-base text-gray-900 mt-1">{reg.teamName}</h4>
+                        <span className="inline-block mt-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800">
+                          {reg.sport}
+                        </span>
+                      </div>
+
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">कप्तान / संपर्क सूत्र</p>
+                        <p className="font-bold text-sm text-gray-800 mt-0.5">{reg.captainName}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <a 
+                            href={`tel:${reg.contact}`}
+                            className="text-xs text-blue-600 hover:underline font-semibold"
+                          >
+                            📞 {reg.contact}
+                          </a>
+                          <a 
+                            href={`https://wa.me/91${(reg.contact || '').replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-green-600 hover:underline font-bold"
+                          >
+                            WhatsApp
+                          </a>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">गाँव / स्थान</p>
+                        <p className="font-semibold text-xs sm:text-sm text-gray-700 mt-0.5">{reg.village || 'सरेरी (Sareri)'}</p>
+                        <p className="text-[11px] text-gray-400 mt-1">तारीख: {reg.date || 'हाल ही में'}</p>
+                      </div>
+
+                      <div className="sm:col-span-2 lg:col-span-1">
+                        <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">खिलाड़ियों की सूची</p>
+                        <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 mt-1 text-xs text-gray-700 line-clamp-3">
+                          {reg.playerNames || 'खिलाड़ियों का विवरण उपलब्ध नहीं'}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         )}
@@ -1259,9 +1878,9 @@ const Admin = () => {
           </div>
         )}
 
-        {activeTab === 'countdown' && (
+        {activeTab === 'gallery' && (
           <div className="mb-10">
-            <ManageCountdown />
+            <ManageGallery />
           </div>
         )}
 
@@ -1274,6 +1893,25 @@ const Admin = () => {
           </div>
         </main>
       </div>
+
+      {/* Theme-Styled Custom Confirmation Modal (Replaces browser window.confirm) */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        type={confirmModal.type}
+        isProcessing={confirmModal.isProcessing}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Theme-Styled Non-Blocking Toast Notification (Replaces browser window.alert) */}
+      <ToastPopup 
+        toast={toast} 
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))} 
+      />
     </div>
   );
 };
