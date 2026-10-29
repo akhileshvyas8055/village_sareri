@@ -17,6 +17,7 @@ const Home = () => {
         title="BRAHMANO KI SARERI - Official Smart Village Portal"
         description="Welcome to the official website of Brahmano Ki Sareri. Explore village citizen services, notices, news, panchayat updates, events, and community initiatives."
         url="https://villagesareri.in/"
+        image="https://villagesareri.in/photos/village_hero_poster.png"
       />
 
       {/* SECTION 1 — HERO */}

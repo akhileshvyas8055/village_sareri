@@ -45,7 +45,7 @@ const FloatingAudioButton = () => {
   if (!hasPlayed) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] animate-fade-in-up">
+    <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-40 animate-fade-in-up">
       <button 
         onClick={toggleAudio}
         className="w-14 h-14 bg-saffron text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(255,153,51,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(255,153,51,0.8)] transition-all duration-300"

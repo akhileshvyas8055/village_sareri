@@ -6,13 +6,15 @@ import { messaging, db } from '../firebase';
 import LanguageToggle from '../components/LanguageToggle';
 import { FiGlobe, FiMoon, FiSun } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { isAppInstalled, promptPWAInstall } from '../utils/pwa';
+import InstallGuideModal from '../components/InstallGuideModal';
 
 const VAPID_KEY = "BGJGryvnAKIvBHBdvq644OaBhX37nZ9JsDboA_6IbJErrYhu3qfLwhAiLWrTTlZz6HEU3TMc6gZ69pIyRiGFoTU"; 
 
 const SettingsPage = ({ darkMode, toggleDarkMode }) => {
   const [notificationStatus, setNotificationStatus] = useState('default');
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(isAppInstalled);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   useEffect(() => {
     // Check Notification status
@@ -20,24 +22,13 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
       setNotificationStatus(Notification.permission);
     }
 
-    // Check PWA Standalone status
-    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    setIsStandalone(isStandaloneMode);
+    setIsStandalone(isAppInstalled());
 
-    // Grab deferred prompt from window if it was saved, or listen for it
-    const handleBeforeInstall = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      window.deferredPrompt = e;
-    };
-
-    if (window.deferredPrompt) {
-      setDeferredPrompt(window.deferredPrompt);
-    }
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    const handleInstalled = () => setIsStandalone(true);
+    window.addEventListener('pwa-installed', handleInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('pwa-installed', handleInstalled);
     };
   }, []);
 
@@ -73,18 +64,11 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
   };
 
   const handleInstallApp = async () => {
-    const promptEvent = deferredPrompt || window.deferredPrompt;
-    if (!promptEvent) {
-      alert("App is either already installed or your browser doesn't support automatic installation. You can manually install it via your browser's 'Add to Home Screen' option.");
-      return;
-    }
-    
-    promptEvent.prompt();
-    const { outcome } = await promptEvent.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-      setDeferredPrompt(null);
-      window.deferredPrompt = null;
+    const res = await promptPWAInstall();
+    if (res.status === 'accepted' || res.status === 'already-installed') {
+      setIsStandalone(true);
+    } else {
+      setShowGuideModal(true);
     }
   };
 
@@ -255,6 +239,11 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
 
         </div>
       </div>
+
+      <InstallGuideModal 
+        isOpen={showGuideModal} 
+        onClose={() => setShowGuideModal(false)} 
+      />
     </div>
   );
 };

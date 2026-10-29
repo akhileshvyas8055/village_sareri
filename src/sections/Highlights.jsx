@@ -56,10 +56,10 @@ const Highlights = () => {
     },
     {
       id: 4,
-      title: 'Local Markets',
-      desc: 'Vibrant local markets offering fresh produce, traditional crafts, and daily essentials.',
+      title: 'Local Markets & Culture',
+      desc: 'Vibrant village traditions, crafts, community gatherings, and daily village life.',
       icon: <FiShoppingCart className="w-5 h-5 md:w-6 md:h-6" />,
-      image: '/photos/local_market.jpg',
+      image: '/photos/village_hero_poster.png',
       video: '',
       color: 'from-purple-500/80 to-indigo-900/90'
     },

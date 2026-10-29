@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 const defaultMeta = {
   siteName: 'Brahmano Ki Sareri',
   siteUrl: 'https://villagesareri.in',
-  image: 'https://villagesareri.in/photos/About.jpeg',
+  image: 'https://villagesareri.in/photos/village_hero_poster.png',
   locale: 'hi_IN',
 };
 

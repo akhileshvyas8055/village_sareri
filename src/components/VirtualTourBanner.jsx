@@ -40,7 +40,7 @@ const VirtualTourBanner = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center transition-transform duration-[4000ms] ease-out group-hover:scale-110"
           style={{ 
-            backgroundImage: "url('/photos/local_market.jpg')", 
+            backgroundImage: "url('/photos/village_hero_poster.png')", 
             backgroundPosition: 'center 60%'
           }}
         ></div>

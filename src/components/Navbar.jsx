@@ -1,11 +1,21 @@
 import { useState } from 'react';
-import { FiMenu, FiX, FiSettings } from 'react-icons/fi';
+import { FiMenu, FiX, FiSettings, FiDownload } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { isAppInstalled, promptPWAInstall } from '../utils/pwa';
+import InstallGuideModal from './InstallGuideModal';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const { t } = useLanguage();
+
+  const handleInstallApp = async () => {
+    const res = await promptPWAInstall();
+    if (res.status !== 'accepted' && res.status !== 'already-installed') {
+      setShowInstallModal(true);
+    }
+  };
 
   const navLinks = [
     { name: t('Home'), href: '/' },
@@ -51,7 +61,15 @@ const Navbar = () => {
             ))}
           </ul>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleInstallApp}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 hover:bg-orange-100 text-saffron border border-orange-200 text-xs font-bold transition-all shadow-sm"
+              title="Install Sareri App"
+            >
+              <FiDownload className="w-3.5 h-3.5" />
+              <span>Install App</span>
+            </button>
             <Link 
               to="/settings"
               className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
@@ -64,6 +82,14 @@ const Navbar = () => {
 
         {/* Mobile Toggle */}
         <div className="flex items-center gap-1 sm:gap-2 md:hidden">
+          <button
+            onClick={handleInstallApp}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 text-saffron border border-orange-200 text-xs font-bold"
+            title="Install App"
+          >
+            <FiDownload className="w-3.5 h-3.5" />
+            <span>App</span>
+          </button>
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
@@ -89,7 +115,17 @@ const Navbar = () => {
               </li>
             ))}
             
-            <li className="pt-2 pb-2 mt-2 border-t border-gray-100">
+            <li className="pt-2 pb-2 mt-2 border-t border-gray-100 flex flex-col gap-1">
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleInstallApp();
+                }}
+                className="flex items-center gap-2 px-2 py-2 text-saffron font-bold hover:bg-orange-50 rounded-md w-full text-left"
+              >
+                <FiDownload className="w-5 h-5" />
+                <span className="text-base font-bold">Install Mobile App (ऐप इंस्टॉल करें)</span>
+              </button>
               <Link 
                 to="/settings"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -102,6 +138,12 @@ const Navbar = () => {
           </ul>
         </div>
       )}
+
+      {/* Install Guide Modal */}
+      <InstallGuideModal 
+        isOpen={showInstallModal} 
+        onClose={() => setShowInstallModal(false)} 
+      />
     </header>
   );
 };

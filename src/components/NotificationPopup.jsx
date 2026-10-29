@@ -74,7 +74,7 @@ const NotificationPopup = () => {
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-[90%] max-w-sm"
+          className="fixed bottom-20 left-4 right-4 md:left-auto md:bottom-10 md:right-10 z-[60] w-auto max-w-sm mx-auto md:mx-0"
         >
           <div className="bg-white dark:bg-darkCard rounded-2xl shadow-2xl p-6 border border-saffron/20 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-saffron to-yellow-500" />
