@@ -50,8 +50,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="pt-24 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <SEO title="My Profile - Brahmano Ki Sareri" />
+    <div className="pt-3 sm:pt-6 pb-12 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <SEO title="My Profile | Village Sareri" noindex={true} />
       <div className="container mx-auto px-4 max-w-2xl">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

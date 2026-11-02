@@ -14,6 +14,18 @@ import {
 
 const serviceCards = [
   {
+    id: 'complaint',
+    titleHi: 'जनसुनवाई एवं शिकायत',
+    titleEn: 'Complaints & Suggestions',
+    description: 'गाँव की समस्याओं एवं जनहित सुझावों को सीधे पंचायत तक पहुँचाएँ',
+    path: '/complaint',
+    icon: LuMessageSquareWarning,
+    color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300',
+    borderStyle: 'border-2 border-rose-300 dark:border-rose-900/60 hover:border-rose-500 hover:shadow-rose-500/15',
+    accent: '#E11D48',
+    badge: 'Jan Sunwai'
+  },
+  {
     id: 'notices',
     titleHi: 'डिजिटल सूचना पट्ट',
     titleEn: 'Digital Notice Board',
@@ -21,7 +33,7 @@ const serviceCards = [
     path: '/notices',
     icon: LuBell,
     color: 'text-[#0D477A] bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300',
-    borderColor: 'hover:border-[#0D477A]/40 dark:hover:border-blue-400/40',
+    borderStyle: 'border-2 border-blue-300 dark:border-blue-900/60 hover:border-[#0D477A] hover:shadow-blue-500/15',
     accent: '#0D477A',
     badge: 'Live'
   },
@@ -33,7 +45,7 @@ const serviceCards = [
     path: '/panchayat',
     icon: LuBuilding2,
     color: 'text-[#0D9488] bg-teal-50 dark:bg-teal-950/40 dark:text-teal-300',
-    borderColor: 'hover:border-[#0D9488]/40 dark:hover:border-teal-400/40',
+    borderStyle: 'border-2 border-teal-300 dark:border-teal-900/60 hover:border-teal-600 hover:shadow-teal-500/15',
     accent: '#0D9488',
     badge: null
   },
@@ -45,7 +57,7 @@ const serviceCards = [
     path: '/about',
     icon: LuCompass,
     color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300',
-    borderColor: 'hover:border-indigo-500/40 dark:hover:border-indigo-400/40',
+    borderStyle: 'border-2 border-indigo-300 dark:border-indigo-900/60 hover:border-indigo-600 hover:shadow-indigo-500/15',
     accent: '#4F46E5',
     badge: null
   },
@@ -57,7 +69,7 @@ const serviceCards = [
     path: '/community',
     icon: LuUsers,
     color: 'text-cyan-700 bg-cyan-50 dark:bg-cyan-950/40 dark:text-cyan-300',
-    borderColor: 'hover:border-cyan-600/40 dark:hover:border-cyan-400/40',
+    borderStyle: 'border-2 border-cyan-300 dark:border-cyan-900/60 hover:border-cyan-600 hover:shadow-cyan-500/15',
     accent: '#0891B2',
     badge: null
   },
@@ -70,7 +82,7 @@ const serviceCards = [
     isComingSoon: false,
     icon: LuStore,
     color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 dark:text-purple-300',
-    borderColor: 'hover:border-purple-500/40 dark:hover:border-purple-400/40',
+    borderStyle: 'border-2 border-purple-300 dark:border-purple-900/60 hover:border-purple-600 hover:shadow-purple-500/15',
     accent: '#9333EA',
     badge: 'Directory'
   },
@@ -82,21 +94,9 @@ const serviceCards = [
     path: '/events',
     icon: LuCalendar,
     color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300',
-    borderColor: 'hover:border-amber-500/40 dark:hover:border-amber-400/40',
+    borderStyle: 'border-2 border-amber-300 dark:border-amber-900/60 hover:border-amber-500 hover:shadow-amber-500/15',
     accent: '#D97706',
     badge: 'Melas'
-  },
-  {
-    id: 'complaint',
-    titleHi: 'जनसुनवाई एवं शिकायत',
-    titleEn: 'Complaints & Suggestions',
-    description: 'गाँव की समस्याओं एवं जनहित सुझावों को सीधे पंचायत तक पहुँचाएँ',
-    path: '/complaint',
-    icon: LuMessageSquareWarning,
-    color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300',
-    borderColor: 'hover:border-rose-500/40 dark:hover:border-rose-400/40',
-    accent: '#E11D48',
-    badge: 'Jan Sunwai'
   },
   {
     id: 'pride',
@@ -106,7 +106,7 @@ const serviceCards = [
     path: '/pride',
     icon: LuAward,
     color: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300',
-    borderColor: 'hover:border-emerald-600/40 dark:hover:border-emerald-400/40',
+    borderStyle: 'border-2 border-emerald-300 dark:border-emerald-900/60 hover:border-emerald-600 hover:shadow-emerald-500/15',
     accent: '#059669',
     badge: null
   }
@@ -116,7 +116,7 @@ const CitizenServices = () => {
   const [comingSoonModalOpen, setComingSoonModalOpen] = useState(false);
 
   return (
-    <section id="services" className="py-10 md:py-16 bg-white dark:bg-[#0B1120] transition-colors relative">
+    <section id="services" className="py-10 md:py-16 bg-slate-50/70 dark:bg-[#0B1120] transition-colors relative border-y border-slate-200/60 dark:border-slate-800">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         
         {/* Section Header */}
@@ -131,15 +131,21 @@ const CitizenServices = () => {
           <div className="w-16 h-1 bg-[#0D477A] dark:bg-sky-400 mx-auto mt-3 rounded-full"></div>
         </div>
 
-        {/* 7 Services Grid */}
+        {/* 8 Services Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           {serviceCards.map((service) => {
             const IconComponent = service.icon;
 
             const cardInner = (
               <div
-                className={`group relative h-full flex flex-col justify-between p-3.5 sm:p-5 md:p-6 bg-white dark:bg-slate-800/90 rounded-xl sm:rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 ${service.borderColor} cursor-pointer min-h-[160px] sm:min-h-[190px] md:min-h-[210px]`}
+                className={`group relative h-full flex flex-col justify-between p-3.5 sm:p-5 md:p-6 bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl ${service.borderStyle} shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 cursor-pointer min-h-[165px] sm:min-h-[195px] md:min-h-[215px] overflow-hidden`}
               >
+                {/* Top colored accent line */}
+                <div 
+                  className="absolute top-0 left-0 right-0 h-1" 
+                  style={{ backgroundColor: service.accent }}
+                ></div>
+
                 {/* Top Badge (if any) */}
                 {service.badge && (
                   <div className="absolute top-3 right-3">
@@ -180,7 +186,7 @@ const CitizenServices = () => {
 
                 {/* Bottom Action Footer */}
                 <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs font-semibold text-[#0D477A] dark:text-sky-300">
-                  <span className="text-[11px] sm:text-xs">विवरण देखें</span>
+                  <span className="text-[11px] sm:text-xs font-bold">विवरण देखें</span>
                   <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700/70 flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-[#0D477A] group-hover:text-white dark:group-hover:bg-sky-500 transition-all duration-300 group-hover:translate-x-0.5">
                     <LuArrowRight className="w-3.5 h-3.5" />
                   </div>

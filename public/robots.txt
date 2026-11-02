@@ -1,5 +1,11 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /settings
+Disallow: /profile
+Disallow: /khel-registration
+Disallow: /api/
 
+# Host & Sitemap
+Host: https://villagesareri.in
 Sitemap: https://villagesareri.in/sitemap.xml

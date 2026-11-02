@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { FiShare2, FiCheck, FiCopy, FiLoader } from 'react-icons/fi';
+import { getNewsCoverImageUrl } from '../utils/newsImage';
 
 const NewsShareButtons = ({ item, compact = false }) => {
   const [copied, setCopied] = useState(false);
@@ -11,32 +12,33 @@ const NewsShareButtons = ({ item, compact = false }) => {
       ? window.location.origin
       : 'https://villagesareri.in';
 
-    // Direct link to this specific news article (supports both ?id= and #news-)
-    const newsUrl = `${origin}/news?id=${item.id || ''}`;
-
-    const title = item.title || 'गाँव की ताज़ा खबर';
-    const dateLine = item.date ? `\n📅 *दिनांक:* ${item.date}` : '';
+    // Canonical direct link to this specific news article
+    const newsUrl = `${origin}/news?id=${encodeURIComponent(item?.id || '')}`;
+    const imageUrl = getNewsCoverImageUrl(item);
+    const title = item?.title || 'गाँव की ताज़ा खबर';
+    const dateLine = item?.date ? `\n📅 *दिनांक:* ${item.date}` : '';
 
     let snippet = '';
-    if (item.desc) {
+    if (item?.desc) {
       const cleanDesc = item.desc.replace(/\s+/g, ' ').trim();
-      snippet = `\n\n📝 ${cleanDesc.length > 200 ? cleanDesc.slice(0, 197) + '...' : cleanDesc}`;
+      snippet = `\n\n📝 ${cleanDesc.length > 180 ? cleanDesc.slice(0, 177) + '...' : cleanDesc}`;
     }
 
-    // Clean text caption WITHOUT the huge Firebase image URL
-    const captionText = `📰 *${title}*${dateLine}${snippet}\n\n🔗 *पूरी खबर पढ़ने के लिए यहाँ क्लिक करें:*\n${newsUrl}\n\n— *ब्राह्मणों की सरेरी ग्राम पोर्टल*`;
+    // Clean text caption with canonical URL (Never append raw Base64 data)
+    const captionText = `📰 *${title}*${dateLine}${snippet}\n\n🔗 *पूरी खबर पढ़ने के लिए लिंक पर क्लिक करें:*\n${newsUrl}\n\n— *Village Sareri Digital Portal*`;
 
-    return { title, newsUrl, captionText, origin };
+    return { title, newsUrl, imageUrl, captionText };
   };
 
-  // Helper to fetch image as a File object for native photo sharing
+  // Helper to fetch valid HTTPS image file for native photo sharing
   const fetchImageFile = async (imageUrl) => {
     try {
+      if (!imageUrl || !imageUrl.startsWith('http')) return null;
       const res = await fetch(imageUrl, { mode: 'cors' });
       if (!res.ok) return null;
       const blob = await res.blob();
       const ext = blob.type.includes('png') ? 'png' : 'jpg';
-      return new File([blob], `sareri-news-${item.id || 'photo'}.${ext}`, {
+      return new File([blob], `sareri-news-${item?.id || 'photo'}.${ext}`, {
         type: blob.type || 'image/jpeg'
       });
     } catch {
@@ -48,13 +50,12 @@ const NewsShareButtons = ({ item, compact = false }) => {
     e.stopPropagation();
     setIsSharing(true);
 
-    const { title, newsUrl, captionText } = getCleanShareData();
+    const { title, newsUrl, imageUrl, captionText } = getCleanShareData();
 
     try {
-      // 1. If native share is supported and news has a cover photo:
-      // Try to share the ACTUAL photo with the caption text underneath
-      if (item.image && typeof navigator !== 'undefined' && navigator.share) {
-        const imageFile = await fetchImageFile(item.image);
+      // 1. If native file share is supported and image is a valid HTTPS file
+      if (typeof navigator !== 'undefined' && navigator.share && imageUrl && imageUrl.startsWith('http')) {
+        const imageFile = await fetchImageFile(imageUrl);
         if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
           await navigator.share({
             files: [imageFile],
@@ -66,7 +67,7 @@ const NewsShareButtons = ({ item, compact = false }) => {
         }
       }
 
-      // 2. If file share isn't supported, try native text share
+      // 2. Standard native text + canonical URL share
       if (typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({
           title: title,
@@ -79,12 +80,12 @@ const NewsShareButtons = ({ item, compact = false }) => {
     } catch (err) {
       if (err.name === 'AbortError') {
         setIsSharing(false);
-        return; // User cancelled share sheet
+        return; // User dismissed share sheet
       }
       console.warn('Native share fallback triggered:', err);
     }
 
-    // 3. Fallback: Direct WhatsApp text with clean news link (No big image URL)
+    // 3. Fallback: Direct WhatsApp message with clean short link and rich Open Graph card
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(captionText)}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     setIsSharing(false);
@@ -105,12 +106,12 @@ const NewsShareButtons = ({ item, compact = false }) => {
   if (compact) {
     return (
       <div className="flex items-center gap-1.5">
-        {/* WhatsApp / Photo Share Button */}
         <button
           onClick={handleShare}
           disabled={isSharing}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] active:scale-95 text-white text-xs font-bold transition-all shadow-sm shadow-emerald-500/20 disabled:opacity-75"
-          title="फोटो व लिंक के साथ शेयर करें"
+          title="WhatsApp पर शेयर करें"
+          aria-label="WhatsApp Share"
         >
           {isSharing ? (
             <FiLoader className="w-3.5 h-3.5 animate-spin text-white" />
@@ -120,11 +121,11 @@ const NewsShareButtons = ({ item, compact = false }) => {
           <span>{isSharing ? 'तैयार...' : 'शेयर'}</span>
         </button>
 
-        {/* Copy Link */}
         <button
           onClick={handleCopyLink}
           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 hover:bg-gray-100 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95"
           title="खबर व लिंक कॉपी करें"
+          aria-label="Copy News Link"
         >
           {copied ? (
             <>
@@ -145,24 +146,24 @@ const NewsShareButtons = ({ item, compact = false }) => {
         <FiShare2 className="w-3.5 h-3.5" /> शेयर:
       </span>
 
-      {/* Main WhatsApp / Photo Share Button */}
       <button
         onClick={handleShare}
         disabled={isSharing}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-75"
+        aria-label="Share on WhatsApp"
       >
         {isSharing ? (
           <FiLoader className="w-4 h-4 animate-spin text-white" />
         ) : (
           <FaWhatsapp className="w-4 h-4 text-white" />
         )}
-        <span>{isSharing ? 'फोटो तैयार हो रही है...' : 'WhatsApp पर भेजें (फोटो सहित)'}</span>
+        <span>{isSharing ? 'तैयार हो रहा है...' : 'WhatsApp पर भेजें (फोटो सहित)'}</span>
       </button>
 
-      {/* Copy News Link */}
       <button
         onClick={handleCopyLink}
         className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-xs transition-all active:scale-95"
+        aria-label="Copy News Link"
       >
         {copied ? (
           <>

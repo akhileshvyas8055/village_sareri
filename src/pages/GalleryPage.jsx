@@ -77,13 +77,17 @@ const GalleryPage = () => {
   };
 
   return (
-    <div className="pt-20 bg-gray-50 dark:bg-gray-900 min-h-screen notranslate">
+    <div className="pt-2 sm:pt-4 bg-gray-50 dark:bg-gray-900 min-h-screen notranslate">
       <SEO
-        title="Village Gallery | Photos & Videos of Brahmano Ki Sareri"
-        description="Explore beautiful photos and videos of Brahmano Ki Sareri including festivals, temples, Sareri Shyam Khel Mahotsav, and village life."
+        title="Photo & Video Gallery | Brahmano Ki Sareri Memories"
+        description="सरेरी गाँव के सुंदर दृश्य, ऐतिहासिक मंदिरों, उत्सवों, कृषि भूमि एवं खेल आयोजनों की विशेष फ़ोटो व वीडियो गैलरी।"
         url="https://villagesareri.in/gallery"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://villagesareri.in/' },
+          { name: 'Gallery', url: 'https://villagesareri.in/gallery' }
+        ]}
       />
-      <div className="text-center py-12">
+      <div className="text-center py-6 sm:py-10">
         <h1 className="text-5xl md:text-6xl font-bold font-heading text-gray-900 dark:text-white mb-4">
           Village <span className="text-saffron">Gallery</span>
         </h1>

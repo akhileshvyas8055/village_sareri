@@ -1,43 +1,119 @@
 {
   "rules": {
+    "userRoles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || !data.exists() && !root.child('userRoles').exists())"
+      }
+    },
     "businesses": {
       ".read": true,
       "$businessId": {
-        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() === auth.uid || auth.token.admin === true)"
+        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() === auth.uid || root.child('userRoles').child(auth.uid).child('role').val() === 'admin')"
       }
     },
     "businessSlugs": {
       ".read": true,
       "$slug": {
-        ".write": "auth != null"
+        ".write": "auth != null && (!data.exists() || root.child('businesses').child(data.val()).child('ownerUid').val() === auth.uid || root.child('userRoles').child(auth.uid).child('role').val() === 'admin')"
       }
     },
     "businessApplications": {
       ".read": "auth != null",
       "$appId": {
-        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() === auth.uid || auth.token.admin === true)"
+        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() === auth.uid || root.child('userRoles').child(auth.uid).child('role').val() === 'admin')"
       }
     },
     "businessReviews": {
       ".read": true,
       "$businessId": {
         "$userUid": {
-          ".write": "auth != null && (auth.uid === $userUid || auth.token.admin === true)",
+          ".write": "auth != null && (auth.uid === $userUid || root.child('userRoles').child(auth.uid).child('role').val() === 'admin')",
           ".validate": "newData.hasChildren(['rating']) && newData.child('rating').isNumber() && newData.child('rating').val() >= 1 && newData.child('rating').val() <= 5"
         }
       }
     },
     "businessCategories": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
     },
     "panchayat": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
     },
     "adminData": {
-      ".read": true,
-      ".write": "auth != null"
+      "complaints": {
+        ".read": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch' || (query.orderByChild == 'userId' && query.equalTo == auth.uid))",
+        ".indexOn": ["userId", "timestamp", "status"],
+        "$complaintId": {
+          ".read": "auth != null && (data.child('userId').val() === auth.uid || root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')",
+          ".write": "auth != null && (
+            (!data.exists() && newData.child('userId').val() === auth.uid) ||
+            (data.exists() && (
+              (data.child('userId').val() === auth.uid && newData.child('status').val() === 'Cancelled') ||
+              root.child('userRoles').child(auth.uid).child('role').val() === 'admin' ||
+              root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch'
+            ))
+          )"
+        }
+      },
+      "khelRegistrations": {
+        ".read": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')",
+        "$regId": {
+          ".write": "!data.exists() || (auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch'))"
+        }
+      },
+      "khelSettings": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+      },
+      "poll": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')",
+        "options": {
+          "$optionIndex": {
+            "votes": {
+              ".write": true,
+              ".validate": "newData.isNumber()"
+            }
+          }
+        }
+      },
+      "news": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+      },
+      "events": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+      },
+      "gallery": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+      },
+      "achievements": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+      },
+      "gramSabha": {
+        ".read": true,
+        ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+      },
+      "vikasKarya": {
+        "works": {
+          ".read": true,
+          ".write": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')"
+        },
+        "feedback": {
+          ".read": "auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch')",
+          "$workId": {
+            "$feedbackId": {
+              ".write": "!data.exists() || (auth != null && (root.child('userRoles').child(auth.uid).child('role').val() === 'admin' || root.child('userRoles').child(auth.uid).child('role').val() === 'sarpanch'))",
+              ".validate": "newData.hasChildren(['feedback', 'rating']) && newData.child('rating').isNumber()"
+            }
+          }
+        }
+      }
     }
   }
 }

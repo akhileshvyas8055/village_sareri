@@ -125,11 +125,15 @@ const NoticeBoardPage = () => {
   }, [notices, searchQuery, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-24 pb-16">
+    <div className="min-h-screen bg-white dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-3 sm:pt-6 pb-16">
       <SEO
-        title="डिजिटल सूचना पट्ट | Digital Notice Board - Brahmano Ki Sareri"
-        description="सरेरी ग्राम पंचायत का आधिकारिक डिजिटल सूचना पट्ट। ग्राम पंचायत के नवीनतम आदेश, अधिसूचनाएँ, जनहित सूचनाएँ और परिपत्र ऑनलाइन देखें।"
+        title="Digital Notice Board | Gram Panchayat Sareri Announcements"
+        description="सरेरी ग्राम पंचायत के आधिकारिक आदेश, सरकारी निविदाएं, शिविर सूचनाएं एवं प्रशासनिक घोषणाओं का लाइव डिजिटल सूचना पट्ट।"
         url="https://villagesareri.in/notices"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://villagesareri.in/' },
+          { name: 'Notice Board', url: 'https://villagesareri.in/notices' }
+        ]}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">

@@ -8,6 +8,7 @@ import { FiGlobe, FiMoon, FiSun } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { isAppInstalled, promptPWAInstall } from '../utils/pwa';
 import InstallGuideModal from '../components/InstallGuideModal';
+import SEO from '../components/SEO';
 
 const VAPID_KEY = "BGJGryvnAKIvBHBdvq644OaBhX37nZ9JsDboA_6IbJErrYhu3qfLwhAiLWrTTlZz6HEU3TMc6gZ69pIyRiGFoTU"; 
 
@@ -73,7 +74,8 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-darkBg pt-24 pb-12 px-4 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-darkBg pt-3 sm:pt-6 pb-12 px-4 transition-colors">
+      <SEO title="Settings | Village Sareri" noindex={true} />
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 bg-saffron text-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
@@ -200,42 +202,38 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
             </div>
           </div>
 
-          {/* App Installation Section */}
-          <div className="bg-white dark:bg-darkCard rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-green-50 dark:bg-green-900/30 text-green-600 rounded-xl">
-                <FiDownload className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Install Mobile App</h2>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                  Install the Sareri app on your phone for a faster, full-screen experience without opening the browser.
-                </p>
-                
-                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">App Status</span>
-                    <span className={`text-sm font-bold ${isStandalone ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}`}>
-                      {isStandalone ? 'Installed (Standalone)' : 'Browser Mode'}
-                    </span>
-                  </div>
+          {/* App Installation Section - Only visible in Web browser mode */}
+          {!isStandalone && !isAppInstalled() && (
+            <div className="pwa-install-btn bg-white dark:bg-darkCard rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-green-50 dark:bg-green-900/30 text-green-600 rounded-xl">
+                  <FiDownload className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Install Mobile App</h2>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    Install the Sareri app on your phone for a faster, full-screen experience without opening the browser.
+                  </p>
                   
-                  {!isStandalone ? (
+                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">App Status</span>
+                      <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                        Browser Mode
+                      </span>
+                    </div>
+                    
                     <button 
                       onClick={handleInstallApp}
                       className="flex items-center gap-2 px-4 py-2 bg-saffron hover:bg-orange-600 text-white text-sm font-bold rounded-lg shadow-md transition-colors"
                     >
                       <FiDownload className="w-4 h-4" /> Install App
                     </button>
-                  ) : (
-                    <div className="flex items-center gap-1 text-green-600 font-bold text-sm bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-lg">
-                      <FiCheckCircle className="w-4 h-4" /> Installed
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>

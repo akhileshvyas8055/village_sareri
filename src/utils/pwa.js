@@ -20,14 +20,48 @@ if (typeof window !== 'undefined') {
 export const isAppInstalled = () => {
   if (typeof window === 'undefined') return false;
   try {
+    // 1. Display mode standalone / fullscreen / minimal-ui
     const isStandalone = 
       window.matchMedia('(display-mode: standalone)').matches ||
       window.matchMedia('(display-mode: fullscreen)').matches ||
       window.matchMedia('(display-mode: minimal-ui)').matches ||
-      window.navigator.standalone === true ||
-      document.referrer.includes('android-app://') ||
-      localStorage.getItem('pwa_installed') === 'true';
-    return Boolean(isStandalone);
+      window.matchMedia('(display-mode: window-controls-overlay)').matches;
+
+    // 2. iOS Safari standalone mode
+    const isIOSStandalone = window.navigator.standalone === true;
+
+    // 3. Android app / TWA / WebAPK referrer
+    const isAppReferrer = Boolean(document.referrer && document.referrer.includes('android-app://'));
+
+    // 4. URL query param passed by PWA manifest start_url
+    const isPwaUrl = 
+      window.location.search.includes('source=pwa') ||
+      window.location.search.includes('mode=pwa') ||
+      window.location.search.includes('mode=standalone');
+
+    // 5. Stored installation flag
+    const isStoredInstalled = localStorage.getItem('pwa_installed') === 'true';
+
+    // 6. User Agent check for Android WebView / TWA / WebAPK
+    const ua = navigator.userAgent || '';
+    const isAndroidWebView = /wv|Android.*Version\/[0-9.]*\s+Chrome\/[0-9.]*\s+Mobile/i.test(ua);
+
+    const isInstalled = Boolean(
+      isStandalone || 
+      isIOSStandalone || 
+      isAppReferrer || 
+      isPwaUrl || 
+      (isStoredInstalled && (isStandalone || isIOSStandalone || isAndroidWebView))
+    );
+
+    // If confirmed standalone or pwa url, persist to localStorage so sub-pages also know immediately
+    if (isStandalone || isIOSStandalone || isAppReferrer || isPwaUrl) {
+      try {
+        localStorage.setItem('pwa_installed', 'true');
+      } catch (e) {}
+    }
+
+    return isInstalled;
   } catch {
     return false;
   }

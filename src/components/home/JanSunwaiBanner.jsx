@@ -31,23 +31,24 @@ const JanSunwaiBanner = () => {
               </p>
             </div>
 
-            {/* Right Action Button */}
+            {/* Right Action Buttons */}
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 w-full sm:w-auto">
               <Link
                 to="/complaint"
                 className="inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-xl bg-gradient-to-r from-[#F97316] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-base shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 min-h-[48px]"
                 aria-label="Register Complaint"
               >
-                <LuMessageSquareWarning className="w-5 h-5" />
-                <span>Register Complaint</span>
+                <LuMessageSquareWarning className="w-5 h-5 text-amber-200" />
+                <span>शिकायत दर्ज करें (Register)</span>
                 <LuArrowRight className="w-4 h-4" />
               </Link>
 
               <Link
-                to="/panchayat"
+                to="/complaint?tab=history"
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs sm:text-sm font-semibold border border-white/20 transition-colors backdrop-blur-sm min-h-[44px]"
               >
-                <span>पंचायत संपर्क विवरण देखें</span>
+                <LuClock className="w-4 h-4 text-emerald-300" />
+                <span>शिकायत स्टेटस ट्रैक करें (Track Status)</span>
               </Link>
             </div>
 

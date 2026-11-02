@@ -78,11 +78,15 @@ const BusinessDirectoryPage = () => {
   }, [businesses, searchQuery, selectedCategory, sortBy]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-24 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-3 sm:pt-6 pb-20">
       <SEO
-        title="सरेरी व्यापार निर्देशिका | Local Business Directory - Brahmano Ki Sareri"
-        description="Brahmano Ki Sareri ke sabhi local shops, kirana, mithai, medical, transport aur services ki official directory. Direct contact aur Google Maps directions."
+        title="Local Business Directory | Shop & Services in Sareri"
+        description="सरेरी के स्थानीय व्यापारियों, दुकानों, कृषि उत्पादों, स्वास्थ्य व कारीगर सेवाओं की सत्यापित डायरेक्टरी। सरेरी से खरीदें, सरेरी को बढ़ाएं।"
         url="https://villagesareri.in/businesses"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://villagesareri.in/' },
+          { name: 'Local Businesses', url: 'https://villagesareri.in/businesses' }
+        ]}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">

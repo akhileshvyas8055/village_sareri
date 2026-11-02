@@ -4,7 +4,7 @@ import {
   FiMenu, FiX, FiMessageSquare, FiActivity, FiPieChart, FiUsers, 
   FiFileText, FiUserCheck, FiClock, FiAward, FiShoppingBag, FiCalendar,
   FiShield, FiLock, FiCheckCircle, FiAlertCircle, FiToggleLeft, FiToggleRight,
-  FiSettings, FiExternalLink, FiSearch, FiImage
+  FiSettings, FiExternalLink, FiSearch, FiImage, FiPhone, FiMail, FiMapPin, FiTag
 } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
@@ -21,7 +21,10 @@ import ManageBusinesses from '../components/Admin/ManageBusinesses';
 import ManageNews from '../components/Admin/ManageNews';
 import ManageUsers from '../components/Admin/ManageUsers';
 import ManageGallery from '../components/Admin/ManageGallery';
+import ManageGramSabha from '../components/Admin/ManageGramSabha';
+import ManageVikasKarya from '../components/Admin/ManageVikasKarya';
 import { ConfirmModal, ToastPopup } from '../components/Admin/ThemeModal';
+import SEO from '../components/SEO';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -105,7 +108,7 @@ const Admin = () => {
 
   // Restrict Sarpanch tab access to only allowed tabs
   useEffect(() => {
-    if (adminRole === 'sarpanch' && !['news', 'panchayat', 'events', 'complaints', 'gallery'].includes(activeTab)) {
+    if (adminRole === 'sarpanch' && !['news', 'panchayat', 'events', 'complaints', 'gallery', 'gramSabha', 'vikasKarya'].includes(activeTab)) {
       setActiveTab('news');
     }
   }, [adminRole, activeTab]);
@@ -141,7 +144,7 @@ const Admin = () => {
       fetchUsers();
     }
 
-    // Auth listener to check user role from RTDB and Firestore
+    // Auth listener to check user role strictly from RTDB and Firestore
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -173,10 +176,29 @@ const Admin = () => {
             sessionStorage.setItem('sareriAdminAuth', 'admin');
             sessionStorage.setItem('sareriAdminUid', user.uid);
             fetchUsers();
+          } else {
+            // Logged in user without admin or sarpanch privileges
+            setIsAuthenticated(false);
+            setAdminRole(null);
+            setAdminUser(null);
+            sessionStorage.removeItem('sareriAdminAuth');
+            sessionStorage.removeItem('sareriAdminUid');
           }
         } catch (e) {
           console.warn('Role check error:', e);
+          setIsAuthenticated(false);
+          setAdminRole(null);
+          setAdminUser(null);
+          sessionStorage.removeItem('sareriAdminAuth');
+          sessionStorage.removeItem('sareriAdminUid');
         }
+      } else {
+        // No authenticated Firebase user
+        setIsAuthenticated(false);
+        setAdminRole(null);
+        setAdminUser(null);
+        sessionStorage.removeItem('sareriAdminAuth');
+        sessionStorage.removeItem('sareriAdminUid');
       }
     });
 
@@ -249,13 +271,52 @@ const Admin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, username, password);
-      setIsAuthenticated(true);
-      setAdminRole('admin');
-      sessionStorage.setItem('sareriAdminAuth', 'admin');
+      const userCred = await signInWithEmailAndPassword(auth, username, password);
+      const user = userCred.user;
+
+      // Verify role in RTDB userRoles
+      const roleSnap = await get(ref(rtdb, `userRoles/${user.uid}`));
+      let role = roleSnap.exists() ? roleSnap.val()?.role : null;
+
+      // Fallback check in Firestore
+      if (!role) {
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const docSnap = await getDoc(doc(db, 'users', user.uid));
+          if (docSnap.exists()) {
+            role = docSnap.data()?.role;
+          }
+        } catch (fsErr) {
+          console.warn('Firestore role check:', fsErr);
+        }
+      }
+
+      if (role === 'sarpanch') {
+        setIsAuthenticated(true);
+        setAdminRole('sarpanch');
+        setAdminUser(user);
+        sessionStorage.setItem('sareriAdminAuth', 'sarpanch');
+        sessionStorage.setItem('sareriAdminUid', user.uid);
+        setActiveTab('news');
+      } else if (role === 'admin') {
+        setIsAuthenticated(true);
+        setAdminRole('admin');
+        setAdminUser(user);
+        sessionStorage.setItem('sareriAdminAuth', 'admin');
+        sessionStorage.setItem('sareriAdminUid', user.uid);
+        fetchUsers();
+      } else {
+        await signOut(auth);
+        setIsAuthenticated(false);
+        setAdminRole(null);
+        setAdminUser(null);
+        sessionStorage.removeItem('sareriAdminAuth');
+        sessionStorage.removeItem('sareriAdminUid');
+        alert('❌ यह खाता व्यवस्थापक (Admin) या सरपंच (Sarpanch) के रूप में अधिकृत नहीं है।');
+      }
     } catch (err) {
       console.error(err);
-      alert('Wrong Username or Password! (or account does not exist)');
+      alert('गलत यूज़रनेम या पासवर्ड! (Wrong Username or Password)');
     }
   };
 
@@ -353,27 +414,22 @@ const Admin = () => {
 
   const handleImageUpload = async (id, file) => {
     if (!file) return;
-    
-    // 150KB limit to prevent RTDB from lagging/crashing
-    if (file.size > 150 * 1024) {
-      alert('❌ File is too large! \n\nPlease compress the image to under 150 KB. \nStoring large images directly in the database will crash the website.');
-      return;
-    }
 
     setUploadingImageId(id);
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      handleUpdateNews(id, 'image', base64String);
+    try {
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileRef = storageRef(storage, `news/${Date.now()}_${sanitizedName}`);
+      const uploadTask = await uploadBytesResumable(fileRef, file);
+      const downloadUrl = await getDownloadURL(uploadTask.ref);
+      handleUpdateNews(id, 'image', downloadUrl);
+      alert('✅ फोटो सफलतापूर्वक अपलोड हो गई (Uploaded to Cloud Storage)!');
+    } catch (err) {
+      console.warn('Storage upload error, using local fallback:', err);
+      // Fallback: If Firebase Storage is not yet enabled on free tier, prompt for URL or notify
+      alert('⚠️ क्लाउड स्टोरेज अनुपलब्ध है। कृपया Firebase Console में Storage सक्रिय करें या वैध फोटो URL दर्ज करें।');
+    } finally {
       setUploadingImageId(null);
-    };
-    reader.onerror = () => {
-      alert('Error reading file!');
-      setUploadingImageId(null);
-    };
-    
-    reader.readAsDataURL(file);
+    }
   };
 
   const sendPushNotification = async (title, body, type = 'General', link = '') => {
@@ -718,14 +774,19 @@ const Admin = () => {
         ]);
       });
     } else if (type === 'complaints') {
-      worksheetData.push(['ID', 'Name', 'Contact', 'Date', 'Details']);
+      worksheetData.push(['Tracking ID', 'Name', 'Contact', 'Email', 'Ward / Location', 'Category', 'Date', 'Status', 'Details', 'Admin Reply']);
       data.forEach(c => {
         worksheetData.push([
-          c.id || '',
+          c.trackingId || c.id || '',
           c.name || '',
           c.contact || '',
+          c.userEmail || '',
+          c.ward || 'सामान्य गाँव',
+          c.category || 'सामान्य',
           c.date || '',
-          c.details || ''
+          c.status || 'Pending',
+          c.details || '',
+          c.adminReply || ''
         ]);
       });
     }
@@ -813,6 +874,7 @@ const Admin = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-4 text-gray-900">
+        <SEO title="Admin Portal | Village Sareri" noindex={true} />
         <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-gray-100 relative overflow-hidden">
           {/* Top saffron accent bar */}
           <div className="h-2 w-full bg-gradient-to-r from-saffron via-amber-400 to-orange-600 absolute top-0 left-0"></div>
@@ -900,6 +962,7 @@ const Admin = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden font-sans">
+      <SEO title="Admin Dashboard | Village Sareri" noindex={true} />
       {/* Sidebar (Desktop) */}
       <aside className="w-64 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-col z-20 hidden md:flex border-r border-gray-100 relative">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0">
@@ -948,6 +1011,12 @@ const Admin = () => {
           </button>
           <button onClick={() => setActiveTab('panchayat')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'panchayat' ? 'bg-green-50 text-green-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
             <FiUsers className={`w-5 h-5 ${activeTab === 'panchayat' ? 'text-green-700' : 'text-gray-400'}`} /> ग्राम पंचायत व नोटिस
+          </button>
+          <button onClick={() => setActiveTab('gramSabha')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'gramSabha' ? 'bg-emerald-50 text-[#135334] font-bold shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiUsers className={`w-5 h-5 ${activeTab === 'gramSabha' ? 'text-[#135334]' : 'text-gray-400'}`} /> ग्राम सभा प्रबंधन (Gram Sabha)
+          </button>
+          <button onClick={() => setActiveTab('vikasKarya')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'vikasKarya' ? 'bg-amber-50 text-amber-800 font-bold shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <FiActivity className={`w-5 h-5 ${activeTab === 'vikasKarya' ? 'text-amber-800' : 'text-gray-400'}`} /> विकास कार्य प्रबंधन (Works)
           </button>
           <button onClick={() => setActiveTab('events')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'events' ? 'bg-amber-50 text-amber-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
             <FiCalendar className={`w-5 h-5 ${activeTab === 'events' ? 'text-amber-700' : 'text-gray-400'}`} /> मेले व उत्सव (Events)
@@ -1050,6 +1119,22 @@ const Admin = () => {
             🏛️ पंचायत
           </button>
           <button
+            onClick={() => setActiveTab('gramSabha')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'gramSabha' ? 'bg-[#135334] text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            👥 ग्राम सभा
+          </button>
+          <button
+            onClick={() => setActiveTab('vikasKarya')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeTab === 'vikasKarya' ? 'bg-amber-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            🏗️ विकास कार्य
+          </button>
+          <button
             onClick={() => setActiveTab('events')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === 'events' ? 'bg-amber-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600'
@@ -1118,6 +1203,8 @@ const Admin = () => {
               <h2 className="text-2xl font-bold text-gray-800 capitalize tracking-tight">
                 {activeTab === 'businesses' ? 'Business Directory' : 
                  activeTab === 'khel' ? 'Khel Registrations' : 
+                 activeTab === 'gramSabha' ? 'ग्राम सभा प्रबंधन (Gram Sabha)' :
+                 activeTab === 'vikasKarya' ? 'विकास कार्य प्रबंधन (Development Works)' :
                  activeTab === 'panchayat' ? 'Gram Panchayat & Notices' : 
                  activeTab === 'events' ? 'Events & Melas' : 
                  activeTab === 'users' ? 'Registered Citizens & Roles' : 
@@ -1184,6 +1271,12 @@ const Admin = () => {
                 </button>
                 <button onClick={() => {setActiveTab('panchayat'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'panchayat' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                   <FiUsers className="w-5 h-5" /> पंचायत व नोटिस
+                </button>
+                <button onClick={() => {setActiveTab('gramSabha'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'gramSabha' ? 'bg-emerald-50 text-[#135334] font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiUsers className="w-5 h-5" /> ग्राम सभा प्रबंधन
+                </button>
+                <button onClick={() => {setActiveTab('vikasKarya'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'vikasKarya' ? 'bg-amber-50 text-amber-800 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <FiActivity className="w-5 h-5" /> विकास कार्य प्रबंधन
                 </button>
                 <button onClick={() => {setActiveTab('events'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === 'events' ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                   <FiCalendar className="w-5 h-5" /> मेले व उत्सव
@@ -1253,6 +1346,18 @@ const Admin = () => {
           </div>
         )}
 
+        {activeTab === 'gramSabha' && (
+          <div className="mb-10">
+            <ManageGramSabha />
+          </div>
+        )}
+
+        {activeTab === 'vikasKarya' && (
+          <div className="mb-10">
+            <ManageVikasKarya />
+          </div>
+        )}
+
         {activeTab === 'users' && adminRole === 'admin' && (
           <div className="mb-10">
             <ManageUsers />
@@ -1291,22 +1396,76 @@ const Admin = () => {
                   >
                     <FiTrash2 />
                   </button>
-                  <div className="flex justify-between items-start mb-4 pr-10">
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-900">{comp.name}</h3>
-                      <p className="text-sm text-gray-500 flex items-center gap-2 mt-1">
-                        <span className="font-medium text-gray-700">Contact:</span> {comp.contact}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-400 font-medium bg-gray-100 px-3 py-1 rounded-full">{comp.date}</span>
+
+                  {/* Top Bar: Tracking ID, Category & Date */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3 pr-10">
+                    <span className="font-mono font-bold text-sm bg-slate-100 text-gray-800 px-3 py-1 rounded-lg border border-slate-200">
+                      ID: {comp.trackingId || comp.id}
+                    </span>
+                    {comp.category && (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-orange-50 text-[#FF6B00] border border-orange-200">
+                        🏷️ {comp.category}
+                      </span>
+                    )}
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-[#135334] border border-emerald-200">
+                      📍 {comp.ward || 'सामान्य सरेरी (पूरा गाँव)'}
+                    </span>
+                    <span className="text-xs text-gray-400 font-medium ml-auto">
+                      {comp.date}
+                    </span>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg text-gray-700 border border-gray-100 mb-4 whitespace-pre-wrap">
+
+                  {/* Citizen Info Row */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold text-base text-gray-900 flex items-center gap-2 flex-wrap">
+                        <span>{comp.name}</span>
+                        {comp.userEmail ? (
+                          <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-300">
+                            ✉️ {comp.userEmail}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            (पुराना रिकॉर्ड - बिना ईमेल)
+                          </span>
+                        )}
+                      </h3>
+                      {comp.contact && (
+                        <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-1.5 font-medium">
+                          <FiPhone className="text-emerald-700 w-3.5 h-3.5" />
+                          <span>संपर्क:</span>
+                          <a href={`tel:${comp.contact}`} className="font-bold text-[#135334] hover:underline font-mono">
+                            {comp.contact}
+                          </a>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs font-semibold text-gray-400 block uppercase tracking-wide">
+                        वार्ड / स्थान:
+                      </span>
+                      <span className="text-sm font-extrabold text-gray-900 block">
+                        {comp.ward || 'सामान्य सरेरी'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Complaint Details Description */}
+                  <div className="bg-white p-4 rounded-xl text-gray-800 border border-gray-200 mb-4 whitespace-pre-wrap text-sm leading-relaxed">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">शिकायत का विवरण:</p>
                     {comp.details}
                   </div>
+
                   {comp.photo && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Attached Evidence</p>
-                      <img src={comp.photo} alt="Complaint Evidence" className="max-w-xs rounded-lg border border-gray-200 shadow-sm" />
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">संलग्न साक्ष्य फोटो:</p>
+                      <img 
+                        src={comp.photo} 
+                        alt="Complaint Evidence" 
+                        className="max-w-xs max-h-48 rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:opacity-95" 
+                        onClick={() => window.open(comp.photo, '_blank')}
+                      />
                     </div>
                   )}
                   

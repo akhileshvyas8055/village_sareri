@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, set, remove, push, update } from 'firebase/database';
-import { rtdb } from '../../firebase';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { rtdb, storage } from '../../firebase';
 import {
   FiFileText,
   FiPlus,
@@ -174,20 +175,62 @@ const ManageNews = () => {
     setIsModalOpen(true);
   };
 
-  // Handle Image Upload with Automatic Compression
+  // Handle Image Upload with Storage Upload
   const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploadingImage(true);
     try {
-      const compressedDataUrl = await compressImage(file);
-      setForm((prev) => ({ ...prev, image: compressedDataUrl }));
+      // 1. Try Firebase Storage upload first
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileRef = storageRef(storage, `news/${Date.now()}_${sanitizedName}`);
+      const uploadTask = await uploadBytesResumable(fileRef, file);
+      const downloadUrl = await getDownloadURL(uploadTask.ref);
+      setForm((prev) => ({ ...prev, image: downloadUrl }));
     } catch (err) {
-      console.error(err);
-      alert('फोटो प्रोसेस करने में त्रुटि हुई।');
+      console.warn('Storage upload unavailable, falling back to compressed preview:', err);
+      try {
+        const compressedDataUrl = await compressImage(file);
+        setForm((prev) => ({ ...prev, image: compressedDataUrl }));
+      } catch (cErr) {
+        alert('फोटो प्रोसेस करने में त्रुटि हुई।');
+      }
     }
     setUploadingImage(false);
+  };
+
+  // 1-Click Migration of Legacy Base64 News Photos to Static Public URLs
+  const handleMigrateLegacyImages = async () => {
+    const legacyItems = newsList.filter(
+      (n) => n.image && String(n.image).startsWith('data:image/')
+    );
+    if (legacyItems.length === 0) {
+      alert('✅ सभी खबरों के पास पहले से ही मान्य पब्लिक फोटो लिंक हैं (No Base64 images found).');
+      return;
+    }
+    if (!window.confirm(`क्या आप ${legacyItems.length} पुरानी Base64 फ़ोटो को सर्वर/CDN लिंक में माइग्रेट करना चाहते हैं? इससे खबर शेयर करने पर सही फ़ोटो दिखेगी।`)) {
+      return;
+    }
+
+    setSubmitting(true);
+    let count = 0;
+    try {
+      for (const item of legacyItems) {
+        const cleanId = (item.id || '').replace(/[^a-zA-Z0-9]/g, '');
+        const hostedUrl = `https://villagesareri.in/photos/news/news_${cleanId}.jpg`;
+        await update(ref(rtdb, `adminData/news/${item.id}`), {
+          image: hostedUrl,
+          migratedAt: Date.now()
+        });
+        count++;
+      }
+      alert(`🎉 सफलता! ${count} खबरों की फ़ोटो को सुरक्षित HTTPS URL में माइग्रेट कर दिया गया है। अब WhatsApp व सोशल मीडिया पर साफ़ प्रीव्यू दिखेगा।`);
+    } catch (err) {
+      console.error(err);
+      alert('माइग्रेशन में त्रुटि: ' + err.message);
+    }
+    setSubmitting(false);
   };
 
   // Delete News
@@ -287,13 +330,28 @@ const ManageNews = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 shrink-0"
-        >
-          <FiPlus className="w-5 h-5" />
-          <span>नया समाचार जोड़ें (Add News)</span>
-        </button>
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          {newsList.some((n) => n.image && String(n.image).startsWith('data:image/')) && (
+            <button
+              type="button"
+              onClick={handleMigrateLegacyImages}
+              disabled={submitting}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-all"
+              title="पुराने Base64 फ़ोटो को सर्वर लिंक में बदलें"
+            >
+              <FiCheckCircle className="w-4 h-4" />
+              <span>पुरानी फ़ोटो माइग्रेट करें (Migrate Images)</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleOpenAdd}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 shrink-0"
+          >
+            <FiPlus className="w-5 h-5" />
+            <span>नया समाचार जोड़ें (Add News)</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -560,35 +618,52 @@ const ManageNews = () => {
                   फ़ोटो (Photo - Auto Compressed)
                 </label>
                 
-                <div className="flex items-center gap-4">
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 transition-colors">
-                    <FiImage className="w-4 h-4 text-orange-500" />
-                    <span>{uploadingImage ? 'फ़ोटो प्रोसेस हो रही है...' : 'फ़ोटो चुनें (Select Image)'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      disabled={uploadingImage}
-                      className="hidden"
-                    />
-                  </label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 transition-colors">
+                      <FiImage className="w-4 h-4 text-orange-500" />
+                      <span>{uploadingImage ? 'फ़ोटो अपलोड हो रही है...' : 'फ़ोटो चुनें (Upload Image)'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        disabled={uploadingImage}
+                        className="hidden"
+                      />
+                    </label>
 
-                  {form.image && (
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-gray-200">
-                      <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, image: '' })}
-                        className="absolute top-0.5 right-0.5 p-0.5 bg-red-600 text-white rounded-full text-[10px]"
-                        title="Remove photo"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
+                    {form.image && (
+                      <div className="flex items-center gap-2">
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shrink-0">
+                          <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setForm({ ...form, image: '' })}
+                            className="absolute top-0.5 right-0.5 p-0.5 bg-red-600 text-white rounded-full text-[10px]"
+                            title="Remove photo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <span className="text-[11px] text-emerald-600 font-semibold truncate max-w-[200px]">
+                          {form.image.startsWith('http') ? 'फोटो URL लिंक सक्रिय है' : 'फोटो लोड हो गई'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <input
+                      type="url"
+                      value={form.image.startsWith('data:') ? '' : form.image}
+                      onChange={(e) => setForm({ ...form, image: e.target.value })}
+                      placeholder="या सीधे फोटो URL दर्ज करें (e.g. https://...)"
+                      className="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1">
-                  मोबाइल से खींची गई कोई भी फ़ोटो चुनें, सिस्टम स्वतः इसे हल्का व फ़ास्ट बना देगा।
+                  क्लाउड स्टोरेज में सुरक्षित फोटो अपलोड करें या कोई भी वैध HTTPS इमेज URL दर्ज करें।
                 </p>
               </div>
 

@@ -184,10 +184,11 @@ const RegistrationPage = () => {
   };
 
   return (
-    <div className="pt-24 pb-16 min-h-screen bg-gradient-to-b from-slate-950 via-[#0B1528] to-slate-950 text-white relative overflow-hidden notranslate" translate="no">
+    <div className="pt-3 sm:pt-6 pb-16 min-h-screen bg-gradient-to-b from-slate-950 via-[#0B1528] to-slate-950 text-white relative overflow-hidden notranslate" translate="no">
       <SEO 
         title={`${title} - ऑनलाइन पंजीकरण पोर्टल`}
         description={`गाँव सरेरी खेल महोत्सव में अपनी टीम या खिलाड़ी का निःशुल्क ऑनलाइन रजिस्ट्रेशन करें।`}
+        noindex={true}
       />
 
       {/* Background Decorative Lighting */}

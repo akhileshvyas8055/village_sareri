@@ -293,11 +293,16 @@ const BusinessRegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-24 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-3 sm:pt-6 pb-20">
       <SEO
-        title="दुकान पंजीकरण | Register Your Business - Brahmano Ki Sareri"
-        description="Brahmano Ki Sareri me apni dukan ya vyapar ko official digital business directory me shamil karein. Muft panjikaran."
+        title="Register Your Business | Sareri Digital Directory"
+        description="सरेरी में अपनी दुकान या व्यवसाय को डिजिटल पोर्टल पर निःशुल्क पंजीकृत करें एवं ग्राहकों तक सीधे पहुँचें।"
         url="https://villagesareri.in/businesses/register"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://villagesareri.in/' },
+          { name: 'Local Businesses', url: 'https://villagesareri.in/businesses' },
+          { name: 'Register Business', url: 'https://villagesareri.in/businesses/register' }
+        ]}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">

@@ -6,6 +6,7 @@ const LanguageContext = createContext();
 const translations = {
   // Navbar
   'Home': { hi: 'मुख्य पृष्ठ', en: 'Home' },
+  'Gram Sabha': { hi: 'ग्राम सभा', en: 'Gram Sabha' },
   'Panchayat': { hi: 'पंचायत', en: 'Panchayat' },
   'About': { hi: 'हमारे बारे में', en: 'About' },
   'Gallery': { hi: 'गैलरी', en: 'Gallery' },

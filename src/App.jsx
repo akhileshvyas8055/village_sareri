@@ -21,6 +21,9 @@ const PridePage = lazy(() => import('./pages/PridePage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
 const PanchayatPage = lazy(() => import('./pages/Panchayat'));
+const PanchayatKaryalayPage = lazy(() => import('./pages/PanchayatKaryalayPage'));
+const GramSabhaPage = lazy(() => import('./pages/GramSabhaPage'));
+const VikasKaryaPage = lazy(() => import('./pages/VikasKaryaPage'));
 const ComplaintPage = lazy(() => import('./pages/ComplaintPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -29,6 +32,8 @@ const EventsPage = lazy(() => import('./pages/EventsPage'));
 const BusinessDirectoryPage = lazy(() => import('./pages/BusinessDirectoryPage'));
 const BusinessRegisterPage = lazy(() => import('./pages/BusinessRegisterPage'));
 const BusinessDetailPage = lazy(() => import('./pages/BusinessDetailPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 import { AdminContext } from './dataStore';
@@ -129,12 +134,20 @@ function App() {
                     <Route path="/complaint" element={<ComplaintPage />} />
                     <Route path="/khel-registration" element={<RegistrationPage />} />
                     <Route path="/panchayat" element={<PanchayatPage />} />
+                    <Route path="/panchayat/karyalay" element={<PanchayatKaryalayPage />} />
+                    <Route path="/panchayat-karyalay" element={<PanchayatKaryalayPage />} />
+                    <Route path="/gram-sabha" element={<GramSabhaPage />} />
+                    <Route path="/vikas-karya" element={<VikasKaryaPage />} />
                     <Route path="/notices" element={<NoticeBoardPage />} />
                     <Route path="/events" element={<EventsPage />} />
                     <Route path="/settings" element={<SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/businesses" element={<BusinessDirectoryPage />} />
                     <Route path="/businesses/register" element={<BusinessRegisterPage />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/terms-of-service" element={<TermsPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
                     <Route path="/:slug" element={<BusinessDetailPage />} />
                   </Routes>
                 </main>

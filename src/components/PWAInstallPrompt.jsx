@@ -65,8 +65,8 @@ const PWAInstallPrompt = () => {
 
   return (
     <>
-      {showPrompt && !dismissed && (
-        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-8 md:bottom-8 md:w-96 z-[70] animate-in slide-in-from-bottom duration-500">
+      {!isAppInstalled() && showPrompt && !dismissed && (
+        <div className="pwa-install-btn fixed bottom-20 left-4 right-4 md:left-auto md:right-8 md:bottom-8 md:w-96 z-[70] animate-in slide-in-from-bottom duration-500">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-orange-500/25 overflow-hidden">
             {/* Saffron accent bar */}
             <div className="h-1.5 bg-gradient-to-r from-saffron via-orange-500 to-[#1A5C2A]"></div>

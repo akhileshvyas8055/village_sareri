@@ -5,6 +5,32 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/news",
+      "has": [
+        {
+          "type": "query",
+          "key": "id"
+        },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Googlebot|bingbot|Baiduspider|YandexBot|Applebot|Discordbot).*"
+        }
+      ],
+      "destination": "/api/og-news?id=:id"
+    },
+    {
+      "source": "/news/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Googlebot|bingbot|Baiduspider|YandexBot|Applebot|Discordbot).*"
+        }
+      ],
+      "destination": "/api/og-news?id=:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiInstagram, FiMail, FiMapPin, FiPhoneCall } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { FiInstagram, FiMapPin, FiPhoneCall } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -50,13 +49,22 @@ const Footer = () => {
                 <span className="font-heading font-bold text-2xl text-white tracking-wide leading-none notranslate">
                   Village Sareri
                 </span>
+                <span className="text-xs text-amber-400 font-semibold mt-1">
+                  ग्राम पंचायत ब्राह्मणों की सरेरी
+                </span>
               </div>
             </div>
             <p className="text-gray-400 leading-relaxed text-sm mb-6">
-              <span className="notranslate">Brahmano Ki Sareri</span> is not just a village; it's an emotion. A sacred land blessed with ancient temples, rich cultural heritage, and a forward-looking community united by devotion and brotherhood.
+              ग्राम पंचायत ब्राह्मणों की सरेरी — आस्था, संस्कृति और अखंड भाईचारे की पावन धरा। स्वच्छ गाँव, सशक्त पंचायत और पारदर्शी विकास के संकल्प के साथ, जन-जन के सहयोग से निरंतर प्रगति के पथ पर अग्रसर।
             </p>
             <div className="flex gap-4">
-              <a href="https://www.instagram.com/village_sareri?igsh=cDVoYWNwZzlteGkw" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-pink-600 hover:text-white transition-all duration-300 border border-gray-800 hover:border-pink-500 shadow-lg group">
+              <a 
+                href="https://www.instagram.com/village_sareri?igsh=cDVoYWNwZzlteGkw" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-pink-600 hover:text-white transition-all duration-300 border border-gray-800 hover:border-pink-500 shadow-lg group"
+                aria-label="Instagram"
+              >
                 <FiInstagram className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </a>
             </div>
@@ -68,12 +76,17 @@ const Footer = () => {
               Quick Links
               <span className="absolute -bottom-2 left-0 w-1/2 h-1 bg-saffron rounded-full"></span>
             </h3>
-            <ul className="space-y-3 w-full text-center md:text-left">
-              <li><Link to="/" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-2 duration-300">Home</Link></li>
-              <li><Link to="/about" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-2 duration-300">About Village</Link></li>
-              <li><Link to="/gallery" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-2 duration-300">Photo Gallery</Link></li>
-              <li><Link to="/community" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-2 duration-300">Community</Link></li>
-              <li><Link to="/news" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-2 duration-300">News & Complaints</Link></li>
+            <ul className="space-y-2.5 w-full text-center md:text-left text-sm">
+              <li><Link to="/" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Home (मुख्य पृष्ठ)</Link></li>
+              <li><Link to="/panchayat/karyalay" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Panchayat Office (पंचायत कार्यालय)</Link></li>
+              <li><Link to="/notices" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Notice Board (सूचना पट्ट)</Link></li>
+              <li><Link to="/news" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Village News (ग्राम समाचार)</Link></li>
+              <li><Link to="/complaint" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Jan Sunwai (जनसुनवाई)</Link></li>
+              <li><Link to="/businesses" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Business Directory (व्यापार)</Link></li>
+              <li><Link to="/pride" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Pride of Sareri (सरेरी गौरव)</Link></li>
+              <li><Link to="/events" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Events & Festivals (मेले व उत्सव)</Link></li>
+              <li><Link to="/about" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">About Sareri (इतिहास व धरोहर)</Link></li>
+              <li><Link to="/gallery" className="text-gray-400 hover:text-saffron transition-colors inline-block transform hover:translate-x-1 duration-200">Photo Gallery (फ़ोटो गैलरी)</Link></li>
             </ul>
           </div>
 
@@ -87,10 +100,6 @@ const Footer = () => {
               <li className="flex flex-col md:flex-row items-center md:items-start gap-3">
                 <FiMapPin className="w-5 h-5 text-saffron shrink-0 mt-1" />
                 <span className="text-gray-400 text-sm"><span className="notranslate">Brahmano Ki Sareri</span>, <br/> Tehsil Asind, District Bhilwara <br/> Rajasthan - 311026</span>
-              </li>
-              <li className="flex flex-col md:flex-row items-center gap-3">
-                <FiMail className="w-5 h-5 text-saffron shrink-0" />
-                <a href="mailto:shreesarerishyam@gmail.com" className="text-gray-400 hover:text-white transition-colors text-sm">shreesarerishyam@gmail.com</a>
               </li>
               <li className="flex flex-col md:flex-row items-center gap-3">
                 <FiPhoneCall className="w-5 h-5 text-saffron shrink-0" />
@@ -129,14 +138,14 @@ const Footer = () => {
             <span className="md:ml-2 mt-2 md:mt-0 inline-block">Built with <span className="text-red-500">❤️</span> by <span className="text-white font-semibold">Akhilesh Vyas</span></span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-saffron transition-colors relative group">
+            <Link to="/privacy-policy" className="hover:text-saffron transition-colors relative group">
               Privacy Policy
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-saffron group-hover:w-full transition-all duration-300"></span>
-            </a>
-            <a href="#" className="hover:text-saffron transition-colors relative group">
+            </Link>
+            <Link to="/terms-of-service" className="hover:text-saffron transition-colors relative group">
               Terms of Service
               <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-saffron group-hover:w-full transition-all duration-300"></span>
-            </a>
+            </Link>
             <Link to="/admin" className="text-gray-800 hover:text-gray-600 transition-colors">
               Admin
             </Link>

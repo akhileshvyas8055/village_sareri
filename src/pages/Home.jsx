@@ -14,8 +14,8 @@ const Home = () => {
   return (
     <div className="flex flex-col bg-white dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 min-h-screen">
       <SEO 
-        title="BRAHMANO KI SARERI - Official Smart Village Portal"
-        description="Welcome to the official website of Brahmano Ki Sareri. Explore village citizen services, notices, news, panchayat updates, events, and community initiatives."
+        title="Village Sareri | Digital Smart Village Portal"
+        description="ब्राह्मणों की सरेरी, भीलवाड़ा (राजस्थान) का डिजिटल ग्राम पोर्टल। ग्राम पंचायत जानकारी, सरकारी नोटिस, जनसुनवाई, ग्राम समाचार, स्थानीय व्यवसाय और गांव की उपलब्धियां एक ही स्थान पर।"
         url="https://villagesareri.in/"
         image="https://villagesareri.in/photos/village_hero_poster.png"
       />
@@ -41,10 +41,10 @@ const Home = () => {
       {/* SECTION 5 — UPCOMING EVENTS & CULTURE */}
       <EventsCultureSection />
 
-      {/* SECTION 6 — COMPLAINT / JAN SUNWAI CTA */}
+      {/* SECTION 6 — COMPLAINT / JAN SUNWAI BANNER (Placed towards bottom as requested) */}
       <JanSunwaiBanner />
 
-      {/* SECTION 7 — PUBLIC OPINION POLL (Rendered at the very bottom below Shikayat) */}
+      {/* SECTION 7 — PUBLIC OPINION POLL */}
       <PollWidget />
 
       {/* SECTION 8 — EXISTING FOOTER (Rendered automatically by App.jsx) */}

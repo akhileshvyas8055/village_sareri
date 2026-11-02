@@ -408,12 +408,33 @@ const BusinessDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-20 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 font-sans transition-colors pt-3 sm:pt-6 pb-20">
       <SEO
-        title={`${business.name} | ${business.category} - Brahmano Ki Sareri`}
-        description={`${business.name} in Brahmano Ki Sareri. ${business.shortDescription || business.description}. Phone: ${business.phone || 'Available online'}. Directions & Reviews.`}
+        title={`${business.name} | ${business.category} in Village Sareri`}
+        description={`${business.name} in Brahmano Ki Sareri. ${business.shortDescription || business.description || 'Verified local business in Sareri'}. Phone: ${business.phone || 'Available online'}. Directions & Reviews.`}
         url={`https://villagesareri.in/${business.slug}`}
         image={business.coverUrl || business.logoUrl}
+        breadcrumbs={[
+          { name: 'Home', url: 'https://villagesareri.in/' },
+          { name: 'Local Businesses', url: 'https://villagesareri.in/businesses' },
+          { name: business.name, url: `https://villagesareri.in/${business.slug}` }
+        ]}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'LocalBusiness',
+          'name': business.name,
+          'image': business.coverUrl || business.logoUrl || 'https://villagesareri.in/photos/village_hero_poster.png',
+          'telephone': business.phone || '',
+          'address': {
+            '@type': 'PostalAddress',
+            'streetAddress': business.address || 'Brahmano Ki Sareri',
+            'addressLocality': 'Asind',
+            'addressRegion': 'Rajasthan',
+            'postalCode': '311026',
+            'addressCountry': 'IN'
+          },
+          'url': `https://villagesareri.in/${business.slug}`
+        }}
       />
 
       {/* Breadcrumb Navigation */}
