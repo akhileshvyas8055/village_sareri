@@ -1,7 +1,7 @@
 // Vercel Serverless Function: Dynamic Open Graph & Server-Delivered HTML for News Articles
 // Generates rich preview cards for WhatsApp, Facebook, Twitter, Telegram, and Googlebot.
 
-const https = require('https');
+import https from 'node:https';
 
 const FALLBACK_COVER = 'https://villagesareri.in/photos/news/news_fallback_cover.jpg';
 const SITE_NAME = 'Village Sareri';
@@ -57,7 +57,7 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const id = req.query.id || req.query.newsId || '';
   const item = await fetchNewsItem(id);
 
