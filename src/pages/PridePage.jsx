@@ -80,8 +80,16 @@ const PridePage = () => {
       {/* Content Section */}
       <div className="flex-1 container mx-auto px-3 sm:px-4 pb-20 relative z-10">
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-saffron"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 pt-3 sm:pt-5 animate-pulse" role="status" aria-label="सरेरी के गौरव लोड हो रहे हैं">
+            <span className="sr-only">उपलब्धियाँ लोड हो रही हैं…</span>
+            {[0, 1, 2, 3, 4, 5].map((item) => (
+              <div key={item} className="h-52 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="mx-auto h-20 w-20 rounded-full bg-white/10" />
+                <div className="mx-auto mt-5 h-4 w-3/4 rounded bg-white/10" />
+                <div className="mx-auto mt-3 h-3 w-1/2 rounded bg-white/10" />
+                <div className="mx-auto mt-5 h-7 w-24 rounded-full bg-white/10" />
+              </div>
+            ))}
           </div>
         ) : achievements.length === 0 ? (
           <div className="text-center py-20 bg-white/5 backdrop-blur-lg rounded-3xl border border-white/10 max-w-md mx-auto">

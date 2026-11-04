@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, set, remove, push, update } from 'firebase/database';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { rtdb, storage } from '../../firebase';
+import { sendNotificationRequest } from '../../services/notificationApi';
 import {
   FiFileText,
   FiPlus,
@@ -55,17 +56,16 @@ const compressImage = (file) => {
 
 const triggerPushNotification = async (title, body, type = 'General', link = '/news') => {
   try {
-    const response = await fetch('/api/send-notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, type, link })
-    });
-    const result = await response.json();
-    return response.ok && result.success;
+    return await sendNotificationRequest({ title, body, type, link, audience: 'all' });
   } catch (error) {
     console.error('Push notification trigger error:', error);
-    return false;
+    return { success: false, error: error.message };
   }
+};
+
+const notificationResultMessage = (result) => {
+  if (!result || !result.totalTargetedDevices) return 'No active subscribers matched this audience.';
+  return `FCM accepted ${result.fcmAcceptedCount || 0} of ${result.totalTargetedDevices} requests; ${result.failedCount || 0} failed. Device delivery is unconfirmed.`;
 };
 
 const ManageNews = () => {
@@ -280,12 +280,13 @@ const ManageNews = () => {
       // If Push Notification requested
       if (sendPushOnSave) {
         const prefix = form.type === 'Emergency Alert' ? '🚨 अलर्ट: ' : '📢 समाचार: ';
-        await triggerPushNotification(
+        const result = await triggerPushNotification(
           `${prefix}${form.title.trim()}`,
           form.desc.trim() || 'वेबसाइट पर विस्तृत सूचना देखें।',
           form.type,
           '/news'
         );
+        alert(`समाचार सुरक्षित। ${notificationResultMessage(result)}`);
       }
 
       setIsModalOpen(false);
@@ -301,17 +302,13 @@ const ManageNews = () => {
   const handleBroadcast = async (item) => {
     if (window.confirm(`क्या आप "${item.title}" का अलर्ट तुरंत सभी ग्रामीणों को भेजना चाहते हैं?`)) {
       const prefix = item.type === 'Emergency Alert' ? '🚨 ' : '📢 ';
-      const success = await triggerPushNotification(
+      const result = await triggerPushNotification(
         `${prefix}${item.title}`,
         item.desc || 'सरेरी पोर्टल पर विवरण उपलब्ध है।',
         item.type || 'General',
         '/news'
       );
-      if (success) {
-        alert('अलर्ट सभी उपयोगकर्ताओं को सफलतापूर्वक भेज दिया गया!');
-      } else {
-        alert('अलर्ट भेजने में विफल।');
-      }
+      alert(notificationResultMessage(result));
     }
   };
 

@@ -10,6 +10,7 @@ import {
   LuImageOff
 } from 'react-icons/lu';
 import NewsShareButtons from '../NewsShareButtons';
+import ImagePreview from '../ImagePreview';
 
 const LatestNewsSection = () => {
   const [news, setNews] = useState([]);
@@ -112,10 +113,14 @@ const LatestNewsSection = () => {
               >
                 {/* Image if available */}
                 {item.image ? (
-                  <div className="relative w-full h-44 sm:h-48 overflow-hidden bg-slate-100 dark:bg-slate-700">
+                  <ImagePreview
+                    src={item.image}
+                    alt={item.title || 'Village Sareri Samachar'}
+                    className="group relative h-44 w-full cursor-zoom-in overflow-hidden bg-slate-100 text-left sm:h-48"
+                  >
                     <img
                       src={item.image}
-                      alt={item.title}
+                      alt=""
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -125,7 +130,7 @@ const LatestNewsSection = () => {
                         {item.type}
                       </span>
                     )}
-                  </div>
+                  </ImagePreview>
                 ) : (
                   <div className="relative w-full h-24 bg-gradient-to-br from-[#0D477A]/10 to-[#0D9488]/15 dark:from-slate-700 dark:to-slate-800 flex items-center px-5 justify-between border-b border-slate-100 dark:border-slate-700/60">
                     <div className="flex items-center gap-2">

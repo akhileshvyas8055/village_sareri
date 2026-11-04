@@ -79,11 +79,25 @@ const PanchayatKaryalayPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-12 pb-16 flex flex-col items-center justify-center bg-[#FFFDF9]">
-        <div className="w-14 h-14 border-4 border-[#135334] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-[#135334] font-bold text-sm sm:text-base animate-pulse">
-          कार्यालय विवरण लोड हो रहा है...
-        </p>
+      <div className="min-h-screen bg-[#FFFDF9] px-4 pt-8 pb-16 sm:px-6 sm:pt-12" role="status" aria-label="कार्यालय विवरण लोड हो रहा है">
+        <span className="sr-only">कार्यालय विवरण लोड हो रहा है…</span>
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="mx-auto h-8 w-2/3 max-w-md rounded-lg bg-emerald-100" />
+          <div className="mx-auto mt-3 h-4 w-1/2 max-w-xs rounded bg-slate-200" />
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div className="h-64 rounded-3xl border border-emerald-100 bg-white" />
+            <div className="h-64 rounded-3xl border border-emerald-100 bg-white" />
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-32 rounded-2xl border border-emerald-100 bg-white p-4">
+                <div className="h-4 w-1/2 rounded bg-slate-200" />
+                <div className="mt-4 h-3 w-full rounded bg-slate-100" />
+                <div className="mt-2 h-3 w-4/5 rounded bg-slate-100" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

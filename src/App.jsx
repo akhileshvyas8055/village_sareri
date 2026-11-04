@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onMessage } from 'firebase/messaging';
-import { messaging } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, getFirebaseMessaging } from './firebase';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingAudioButton from './components/FloatingAudioButton';
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 
 import NotificationPopup from './components/NotificationPopup';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MobileBottomNav from './components/MobileBottomNav';
 import LanguagePromptPopup from './components/LanguagePromptPopup';
+import PageLoadingSkeleton from './components/PageLoadingSkeleton';
+import NotificationsPage from './pages/NotificationsPage';
+import { FiBell, FiX } from 'react-icons/fi';
+import { syncNotificationToken } from './services/pushNotifications';
+import { syncAuthenticatedUser } from './services/userService';
 
 // Lazy load pages for fast initial render
 const Home = lazy(() => import('./pages/Home'));
@@ -32,6 +38,7 @@ const EventsPage = lazy(() => import('./pages/EventsPage'));
 const BusinessDirectoryPage = lazy(() => import('./pages/BusinessDirectoryPage'));
 const BusinessRegisterPage = lazy(() => import('./pages/BusinessRegisterPage'));
 const BusinessDetailPage = lazy(() => import('./pages/BusinessDetailPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const Admin = lazy(() => import('./pages/Admin'));
@@ -45,11 +52,118 @@ function ScrollToTop() {
     window.scrollTo({
       top: 0,
       left: 0,
-      behavior: 'smooth'
+      behavior: 'auto'
     });
   }, [pathname]);
 
   return null;
+}
+
+function ForegroundNotificationListener() {
+  const navigate = useNavigate();
+  const [notice, setNotice] = useState(null);
+  const seenMessages = useRef(new Set());
+
+  useEffect(() => {
+    let isActive = true;
+    let unsubscribe;
+    let dismissTimer;
+
+    getFirebaseMessaging().then((messaging) => {
+      if (!isActive || !messaging) return;
+
+      unsubscribe = onMessage(messaging, (payload) => {
+        const title = payload.notification?.title || payload.data?.title || 'Village Alert';
+        const body = payload.notification?.body || payload.data?.body || '';
+        const rawLink = payload.data?.link || payload.data?.url || '/';
+        const messageId = payload.messageId || `${title}|${body}|${rawLink}`;
+
+        if (seenMessages.current.has(messageId)) return;
+        seenMessages.current.add(messageId);
+        if (seenMessages.current.size > 100) {
+          seenMessages.current.delete(seenMessages.current.values().next().value);
+        }
+
+        let link = '/';
+        try {
+          const parsedUrl = new URL(rawLink, window.location.origin);
+          if (parsedUrl.origin === window.location.origin) {
+            link = `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+          }
+        } catch {
+          // Keep the safe home-page fallback for malformed destinations.
+        }
+
+        setNotice({ title, body, link });
+        window.clearTimeout(dismissTimer);
+        dismissTimer = window.setTimeout(() => setNotice(null), 9000);
+      });
+    });
+
+    return () => {
+      isActive = false;
+      unsubscribe?.();
+      window.clearTimeout(dismissTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncIfAllowed = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        'Notification' in window &&
+        Notification.permission === 'granted'
+      ) {
+        syncNotificationToken().catch((error) => {
+          console.warn('Unable to refresh notification registration.', error);
+        });
+      }
+    };
+
+    syncIfAllowed();
+    window.addEventListener('focus', syncIfAllowed);
+    document.addEventListener('visibilitychange', syncIfAllowed);
+    return () => {
+      window.removeEventListener('focus', syncIfAllowed);
+      document.removeEventListener('visibilitychange', syncIfAllowed);
+    };
+  }, []);
+
+  if (!notice) return null;
+
+  return (
+    <div className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:w-96 z-[100]" role="status" aria-live="polite">
+      <div className="bg-white dark:bg-darkCard rounded-2xl shadow-2xl border border-saffron/25 overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-orange-400 via-saffron to-yellow-500" />
+        <div className="p-4 flex items-start gap-3">
+          <div className="p-2.5 bg-orange-100 dark:bg-orange-900/30 rounded-full text-saffron shrink-0">
+            <FiBell className="w-5 h-5" />
+          </div>
+          <button
+            type="button"
+            className="flex-1 text-left min-w-0"
+            onClick={() => {
+              setNotice(null);
+              navigate(notice.link);
+            }}
+            aria-label={`${notice.title}. Open notification`}
+          >
+            <span className="block font-bold text-gray-900 dark:text-white">{notice.title}</span>
+            {notice.body && <span className="block text-sm text-gray-600 dark:text-gray-300 mt-1">{notice.body}</span>}
+            <span className="block text-xs font-semibold text-saffron mt-2">Open notice</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            aria-label="Dismiss notification"
+          >
+            <FiX className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -64,35 +178,14 @@ function App() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    // Foreground notification listener
-    if (messaging) {
-      const unsub = onMessage(messaging, (payload) => {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          const title = payload.notification?.title || payload.data?.title || 'Village Alert';
-          const options = {
-            body: payload.notification?.body || payload.data?.body,
-            icon: '/photos/About.jpeg',
-            image: '/photos/About.jpeg',
-            requireInteraction: true,
-            tag: payload.messageId || title, // Deduplicate notifications across multiple tabs
-            data: { url: payload.data?.link || '/' }
-          };
-          
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-              registration.showNotification(title, options);
-            });
-          } else {
-            const notif = new Notification(title, options);
-            notif.onclick = function() {
-              window.open(payload.data?.link || '/', '_blank');
-              notif.close();
-            };
-          }
-        }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) return;
+      syncAuthenticatedUser(user).catch((error) => {
+        console.warn('Unable to sync the signed-in user profile.', error);
       });
-      return () => unsub();
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -116,14 +209,20 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <ForegroundNotificationListener />
       <div className="min-h-screen flex flex-col">
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-saffron"></div></div>}>
-          <Routes>
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/*" element={
-              <>
-                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                <main className="flex-grow pb-16 md:pb-0">
+        <Routes>
+          <Route path="/admin" element={
+            <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-50"><div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-saffron" /></div>}>
+              <Admin />
+            </Suspense>
+          } />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/*" element={
+            <>
+              <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+              <main className="flex-grow pb-16 md:pb-0">
+                <Suspense fallback={<PageLoadingSkeleton />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/about" element={<AboutPage />} />
@@ -149,18 +248,19 @@ function App() {
                     <Route path="/terms-of-service" element={<TermsPage />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/:slug" element={<BusinessDetailPage />} />
+                    <Route path="*" element={<NotFoundPage />} />
                   </Routes>
-                </main>
-                <Footer />
-                <NotificationPopup />
-                <FloatingAudioButton />
-                <PWAInstallPrompt />
-                <LanguagePromptPopup />
-                <MobileBottomNav />
-              </>
-            } />
-          </Routes>
-        </Suspense>
+                </Suspense>
+              </main>
+              <Footer />
+              <NotificationPopup />
+              <FloatingAudioButton />
+              <PWAInstallPrompt />
+              <LanguagePromptPopup />
+              <MobileBottomNav />
+            </>
+          } />
+        </Routes>
       </div>
     </Router>
   );

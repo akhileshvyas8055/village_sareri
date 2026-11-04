@@ -26,3 +26,8 @@ dist-ssr
 .vercel
 .firebase
 
+# Local environment secrets (keep the placeholder template versioned).
+.env
+.env.*
+!.env.example
+

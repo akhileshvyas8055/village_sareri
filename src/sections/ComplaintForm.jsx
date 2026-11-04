@@ -402,10 +402,15 @@ const ComplaintForm = () => {
               className="bg-white dark:bg-slate-800 rounded-3xl p-4 sm:p-6 shadow-md border border-slate-200/80 dark:border-slate-700"
             >
               {authLoading ? (
-                /* Auth Initializing State */
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <div className="w-8 h-8 border-3 border-[#135334] border-t-transparent rounded-full animate-spin" />
-                  <p className="text-xs text-gray-500 font-medium">नागरिक सुरक्षा व प्रमाणीकरण जाँचा जा रहा है...</p>
+                <div className="space-y-4 py-4 animate-pulse" role="status" aria-label="शिकायत फॉर्म लोड हो रहा है">
+                  <span className="sr-only">शिकायत फॉर्म लोड हो रहा है…</span>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[0, 1, 2, 3].map((item) => (
+                      <div key={item} className="h-12 rounded-xl bg-slate-100 dark:bg-slate-700" />
+                    ))}
+                  </div>
+                  <div className="h-28 rounded-xl bg-slate-100 dark:bg-slate-700" />
+                  <div className="h-11 w-36 rounded-xl bg-slate-200 dark:bg-slate-600" />
                 </div>
               ) : successComplaint ? (
                 /* Celebratory Success Card */
@@ -720,10 +725,11 @@ const ComplaintForm = () => {
               className="bg-white dark:bg-slate-800 rounded-3xl p-4 sm:p-6 shadow-md border border-slate-200/80 dark:border-slate-700"
             >
               {authLoading ? (
-                /* Auth Loading State */
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <div className="w-8 h-8 border-3 border-[#0D477A] border-t-transparent rounded-full animate-spin" />
-                  <p className="text-xs text-gray-500 font-medium">आपकी शिकायतें जाँची जा रही हैं...</p>
+                <div className="space-y-3 py-4 animate-pulse" role="status" aria-label="शिकायत इतिहास लोड हो रहा है">
+                  <span className="sr-only">शिकायत इतिहास लोड हो रहा है…</span>
+                  {[0, 1, 2].map((item) => (
+                    <div key={item} className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-700" />
+                  ))}
                 </div>
               ) : !user ? (
                 /* Auth prompt for history tab */

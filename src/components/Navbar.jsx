@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { isAppInstalled, promptPWAInstall } from '../utils/pwa';
 import InstallGuideModal from './InstallGuideModal';
+import NotificationCenter from './NotificationCenter';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -275,6 +276,7 @@ const Navbar = () => {
           
           {/* Action Icons */}
           <div className="flex items-center gap-1.5 xl:gap-2 ml-1">
+            <NotificationCenter />
             {!isInstalled && !isAppInstalled() && (
               <button
                 onClick={handleInstallApp}
@@ -296,7 +298,8 @@ const Navbar = () => {
         </nav>
 
         {/* Mobile / Tablet Toggle - Clean and Minimal */}
-        <div className="flex items-center lg:hidden shrink-0">
+        <div className="flex items-center gap-1 lg:hidden shrink-0">
+          <NotificationCenter />
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"

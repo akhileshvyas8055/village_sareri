@@ -4,6 +4,7 @@ import { FiCalendar, FiBell } from 'react-icons/fi';
 import { ref, onValue } from 'firebase/database';
 import { rtdb } from '../firebase';
 import NewsShareButtons from '../components/NewsShareButtons';
+import ImagePreview from '../components/ImagePreview';
 import SEO from '../components/SEO';
 import { getNewsDisplayImage, getNewsCoverImageUrl, NEWS_FALLBACK_COVER } from '../utils/newsImage';
 
@@ -151,19 +152,23 @@ const NewsList = () => {
                   )}
 
                   {hasCustomImg && (
-                    <div className="w-full h-56 md:h-80 overflow-hidden relative group cursor-pointer bg-gray-100 dark:bg-gray-900">
-                      <img 
-                        src={displayImg} 
-                        alt={item.title || 'Village Sareri Samachar'} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                    <ImagePreview
+                      src={displayImg}
+                      alt={item.title || 'Village Sareri Samachar'}
+                      className="relative h-56 w-full cursor-zoom-in overflow-hidden bg-gray-100 dark:bg-gray-900 md:h-80 group"
+                    >
+                      <img
+                        src={displayImg}
+                        alt=""
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                         loading={index < 2 ? 'eager' : 'lazy'}
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = NEWS_FALLBACK_COVER;
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
+                      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    </ImagePreview>
                   )}
                   
                   <div className="p-6 md:p-8 relative">

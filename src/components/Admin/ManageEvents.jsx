@@ -15,19 +15,14 @@ import {
   FiX,
   FiStar
 } from 'react-icons/fi';
+import { sendNotificationRequest } from '../../services/notificationApi';
 
 const triggerPushNotification = async (title, body, type = 'Festival Announcement', link = '/events') => {
   try {
-    const response = await fetch('/api/send-notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, type, link })
-    });
-    const result = await response.json();
-    return response.ok && result.success;
+    return await sendNotificationRequest({ title, body, type, link, audience: 'all' });
   } catch (error) {
     console.error('Error triggering push notification:', error);
-    return false;
+    return { success: false, error: error.message };
   }
 };
 
@@ -177,12 +172,12 @@ const ManageEvents = () => {
     try {
       const fullTitle = `🚩 सरेरी उत्सव: ${evt.title}`;
       const body = `${evt.tithi ? evt.tithi + ' | ' : ''}${evt.date || ''} - स्थान: ${evt.location || 'सरेरी'}`;
-      const success = await triggerPushNotification(fullTitle, body, 'Festival Announcement', '/events');
-      if (success) {
-        alert('ग्रामीणों को नोटिफिकेशन सफलतापूर्वक भेज दिया गया!');
-      } else {
-        alert('Notification send failed. Check console.');
-      }
+      const result = await triggerPushNotification(fullTitle, body, 'Festival Announcement', '/events');
+      const accepted = result.fcmAcceptedCount || 0;
+      const targeted = result.totalTargetedDevices || 0;
+      alert(targeted
+        ? `FCM accepted ${accepted} of ${targeted} requests; ${result.failedCount || 0} failed. Device delivery is unconfirmed.`
+        : 'No active subscribers matched this audience.');
     } catch (err) {
       alert('Notification error: ' + err.message);
     }

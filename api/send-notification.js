@@ -1,189 +1,165 @@
-import crypto from 'crypto';
+import { randomUUID } from "crypto";
+import { getAdminServices, verifyPanelAdmin } from "../server/firebaseAdmin.js";
+import {
+  claimNotificationRecord,
+  enforceNotificationRateLimit,
+  getSafeNotificationUrl,
+  sendNotificationRecord,
+} from "../server/notificationService.js";
 
-// --- Google OAuth2 Token Generation (no firebase-admin needed) ---
-async function getAccessToken() {
-  const now = Math.floor(Date.now() / 1000);
-  
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  if (privateKey) {
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) privateKey = privateKey.slice(1, -1);
-    if (privateKey.startsWith("'") && privateKey.endsWith("'")) privateKey = privateKey.slice(1, -1);
-    privateKey = privateKey.replace(/\\n/g, '\n');
+const audiences = new Set(["all", "android", "ios", "desktop"]);
+const requestIdPattern = /^[A-Za-z0-9_-]{12,80}$/;
+
+const getValidatedPayload = (body) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { error: "A JSON request body is required." };
   }
 
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = {
-    iss: process.env.FIREBASE_CLIENT_EMAIL,
-    scope: 'https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/datastore',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  };
+  const title = typeof body.title === "string" ? body.title.trim() : "";
+  const messageBody = typeof body.body === "string" ? body.body.trim() : "";
+  const type = typeof body.type === "string" && body.type.trim()
+    ? body.type.trim()
+    : "General";
+  const audience = typeof body.audience === "string" ? body.audience : "all";
 
-  const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-  const unsigned = `${encode(header)}.${encode(payload)}`;
-  
-  const sign = crypto.createSign('RSA-SHA256');
-  sign.update(unsigned);
-  const signature = sign.sign(privateKey, 'base64url');
-  
-  const jwt = `${unsigned}.${signature}`;
+  if (!title || title.length > 120) return { error: "Title must be between 1 and 120 characters." };
+  if (!messageBody || messageBody.length > 2000) return { error: "Message must be between 1 and 2000 characters." };
+  if (type.length > 80) return { error: "Notification category is too long." };
+  if (!audiences.has(audience)) return { error: "The selected audience is not supported." };
 
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
-  });
-
-  const tokenData = await tokenRes.json();
-  if (!tokenData.access_token) {
-    throw new Error('Failed to get access token: ' + JSON.stringify(tokenData));
-  }
-  return tokenData.access_token;
-}
-
-// --- Firestore REST API ---
-async function getTokensFromFirestore(accessToken, projectId) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/fcmTokens?pageSize=500`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const data = await res.json();
-  
-  const tokens = [];
-  if (data.documents) {
-    data.documents.forEach(doc => {
-      const tokenField = doc.fields?.token?.stringValue;
-      if (tokenField) tokens.push(tokenField);
-    });
-  }
-  return tokens;
-}
-
-async function storeNotificationHistory(accessToken, projectId, title, body, type) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/notifications`;
+  let url;
   try {
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        fields: {
-          title: { stringValue: title },
-          body: { stringValue: body },
-          type: { stringValue: type || 'General' },
-          timestamp: { stringValue: new Date().toISOString() },
-        },
-      }),
-    });
-  } catch (e) {
-    console.warn('Failed to store notification history:', e);
-  }
-}
-
-// --- FCM v1 API ---
-async function sendFCMNotification(accessToken, projectId, token, notification, webpush, data) {
-  const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: {
-        token,
-        notification,
-        webpush,
-        data,
-      },
-    }),
-  });
-  return res.ok;
-}
-
-// --- Main Handler ---
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method Not Allowed' });
-  }
-
-  try {
-    const { title, body, type, link } = req.body;
-
-    if (!title || !body) {
-      return res.status(400).json({ success: false, message: 'Missing title or body' });
-    }
-
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    if (!projectId || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-      return res.status(500).json({ success: false, message: 'Missing Firebase environment variables' });
-    }
-
-    // Step 1: Get OAuth2 access token
-    const accessToken = await getAccessToken();
-
-    // Step 2: Store notification in Firestore history
-    await storeNotificationHistory(accessToken, projectId, title, body, type);
-
-    // Step 3: Get all FCM tokens from Firestore
-    const tokens = await getTokensFromFirestore(accessToken, projectId);
-
-    if (tokens.length === 0) {
-      return res.status(200).json({ success: true, message: 'No registered devices found.' });
-    }
-
-    const origin = req.headers.origin || 'https://' + req.headers.host;
-
-    const notification = {
-      title: title.length > 100 ? title.substring(0, 97) + '...' : title,
-      body: body,
-      image: `${origin}/photos/About.jpeg`
-    };
-
-    const webpush = {
-      notification: {
-        icon: `${origin}/photos/About.jpeg`,
-        badge: `${origin}/photos/About.jpeg`,
-        image: `${origin}/photos/About.jpeg`,
-        requireInteraction: true,
-      },
-      fcm_options: {
-        link: link || `${origin}/`,
-      },
-    };
-
-    const data = {
-      link: link || `${origin}/`,
-      icon: `${origin}/photos/About.jpeg` 
-    };
-
-    // Step 4: Send to each token (FCM v1 API requires one-at-a-time)
-    let successCount = 0;
-    let failureCount = 0;
-
-    const sendPromises = tokens.map(async (token) => {
-      try {
-        const ok = await sendFCMNotification(accessToken, projectId, token, notification, webpush, data);
-        if (ok) successCount++;
-        else failureCount++;
-      } catch {
-        failureCount++;
-      }
-    });
-
-    await Promise.all(sendPromises);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Notifications sent successfully!',
-      successCount,
-      failureCount,
-    });
+    url = getSafeNotificationUrl(body.link || body.url || "/");
   } catch (error) {
-    console.error('Error sending notification:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    return { error: error.message };
+  }
+
+  const requestedId = typeof body.requestId === "string" ? body.requestId : "";
+  if (requestedId && !requestIdPattern.test(requestedId)) {
+    return { error: "The request id is invalid." };
+  }
+
+  return {
+    title,
+    body: messageBody,
+    type,
+    audience,
+    url,
+    requestId: requestedId || randomUUID(),
+  };
+};
+
+const toPublicResult = (record, extra = {}) => ({
+  success: (record.fcmAcceptedCount || 0) > 0,
+  status: record.status || "Processing",
+  totalTargetedDevices: record.totalTargetedDevices || 0,
+  fcmAcceptedCount: record.fcmAcceptedCount || 0,
+  failedCount: record.failedCount || 0,
+  invalidTokenCount: record.invalidTokenCount || 0,
+  deliveryConfirmed: false,
+  errors: record.failureCodes || (record.errorSummary ? { summary: record.errorSummary } : {}),
+  ...extra,
+});
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, error: "Method not allowed." });
+  }
+
+  let admin;
+  let claimedNotificationRef;
+  try {
+    admin = await verifyPanelAdmin(req);
+  } catch (error) {
+    console.error("Notification authentication setup failed:", error?.code || "unknown");
+    return res.status(500).json({ success: false, error: "Notification service is unavailable." });
+  }
+
+  if (admin.error) {
+    return res.status(admin.status).json({ success: false, error: admin.error });
+  }
+
+  const payload = getValidatedPayload(req.body);
+  if (payload.error) {
+    return res.status(400).json({ success: false, error: payload.error });
+  }
+
+  try {
+    const services = getAdminServices();
+    const allowed = await enforceNotificationRateLimit(services.firestore, admin.uid);
+    if (!allowed) {
+      return res.status(429).json({ success: false, error: "Too many notification requests. Please wait and try again." });
+    }
+
+    const notificationId = `${admin.uid}_${payload.requestId}`;
+    const timestamp = services.FieldValue.serverTimestamp();
+    const claim = await claimNotificationRecord(services.firestore, notificationId, {
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      targetAudience: payload.audience,
+      destinationUrl: payload.url,
+      status: "Processing",
+      totalTargetedDevices: 0,
+      fcmAcceptedCount: 0,
+      failedCount: 0,
+      invalidTokenCount: 0,
+      deliveryConfirmed: false,
+      createdAt: timestamp,
+      timestamp,
+      createdByUid: admin.uid,
+      createdByLabel: admin.displayName || admin.email || "Village administrator",
+    });
+    claimedNotificationRef = claim.notificationRef;
+
+    if (!claim.claimed) {
+      const existing = claim.existing || {};
+      if (existing.status === "Processing") {
+        return res.status(409).json({
+          ...toPublicResult(existing, { duplicate: true }),
+          error: "This notification request is already being processed.",
+        });
+      }
+      return res.status(200).json(toPublicResult(existing, { duplicate: true }));
+    }
+
+    const result = await sendNotificationRecord({
+      firestore: services.firestore,
+      FieldPath: services.FieldPath,
+      messaging: services.messaging,
+      notificationRef: claim.notificationRef,
+      notificationId,
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      url: payload.url,
+      audience: payload.audience,
+    });
+
+    const responseStatus = result.fcmAcceptedCount === 0
+      ? result.totalTargetedDevices === 0 ? 409 : 502
+      : result.failedCount > 0 ? 207 : 200;
+
+    return res.status(responseStatus).json(toPublicResult(result));
+  } catch (error) {
+    console.error("Notification send failed:", error?.code || "unknown");
+    if (claimedNotificationRef) {
+      try {
+        await claimedNotificationRef.update({
+          status: "Failed",
+          errorSummary: "Notification processing failed; FCM device delivery is unconfirmed.",
+          deliveryConfirmed: false,
+          sentAt: new Date(),
+        });
+      } catch {
+        // Preserve the generic API response even when Firestore is unavailable.
+      }
+    }
+    return res.status(500).json({
+      success: false,
+      status: "Failed",
+      error: "The notification could not be processed. Check the notification history for details.",
+      deliveryConfirmed: false,
+    });
   }
 }

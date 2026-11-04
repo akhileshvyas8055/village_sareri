@@ -272,7 +272,7 @@ const BusinessDirectoryPage = () => {
           /* Business Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredList.map((biz) => {
-              const shopUrl = `/${biz.slug}`;
+              const shopUrl = biz.slug ? `/${biz.slug}` : null;
               const mapUrl = biz.mapLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.name + ' Brahmano Ki Sareri')}`;
 
               return (
@@ -317,11 +317,15 @@ const BusinessDirectoryPage = () => {
                     {/* Content Body */}
                     <div className="p-5">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <Link to={shopUrl} className="group-hover:text-[#0D477A] dark:group-hover:text-sky-300 transition-colors">
+                        {shopUrl ? <Link to={shopUrl} className="group-hover:text-[#0D477A] dark:group-hover:text-sky-300 transition-colors">
                           <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight notranslate">
                             {biz.name}
                           </h2>
-                        </Link>
+                        </Link> : (
+                          <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight notranslate">
+                            {biz.name}
+                          </h2>
+                        )}
                       </div>
 
                       {/* Rating & Reviews */}
@@ -363,13 +367,19 @@ const BusinessDirectoryPage = () => {
 
                   {/* Card Action Footer */}
                   <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/50 flex items-center gap-2">
-                    <Link
-                      to={shopUrl}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-[#0D477A] hover:bg-[#09355C] text-white font-bold text-xs sm:text-sm transition-colors shadow-sm min-h-[44px]"
-                    >
-                      <span>View Shop</span>
-                      <LuArrowRight className="w-4 h-4" />
-                    </Link>
+                    {shopUrl ? (
+                      <Link
+                        to={shopUrl}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-[#0D477A] hover:bg-[#09355C] text-white font-bold text-xs sm:text-sm transition-colors shadow-sm min-h-[44px]"
+                      >
+                        <span>View Shop</span>
+                        <LuArrowRight className="w-4 h-4" />
+                      </Link>
+                    ) : (
+                      <span className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-slate-200 text-slate-500 font-bold text-xs sm:text-sm min-h-[44px] cursor-not-allowed" aria-disabled="true">
+                        दुकान पेज उपलब्ध नहीं
+                      </span>
+                    )}
 
                     <a
                       href={mapUrl}

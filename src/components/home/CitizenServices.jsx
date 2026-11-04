@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { preloadRoute } from '../../utils/routePrefetch';
 import {
   LuBell,
   LuBuilding2,
@@ -198,8 +199,11 @@ const CitizenServices = () => {
               <Link
                 key={service.id}
                 to={service.path}
-                className="block h-full focus:outline-none focus:ring-2 focus:ring-[#0D477A] rounded-xl sm:rounded-2xl min-h-[44px]"
+                className="block h-full touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#0D477A] rounded-xl sm:rounded-2xl min-h-[44px]"
                 aria-label={`${service.titleHi} - ${service.titleEn}`}
+                onPointerDown={() => preloadRoute(service.path).catch(() => {})}
+                onPointerEnter={() => preloadRoute(service.path).catch(() => {})}
+                onFocus={() => preloadRoute(service.path).catch(() => {})}
               >
                 {cardInner}
               </Link>

@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell } from 'react-icons/fi';
-import { getToken } from 'firebase/messaging';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { messaging, db } from '../firebase';
-
-// NOTE: To make this fully work in production, you must generate a Web Push Certificate (VAPID key)
-// from Firebase Console -> Project Settings -> Cloud Messaging -> Web configuration
-const VAPID_KEY = "BGJGryvnAKIvBHBdvq644OaBhX37nZ9JsDboA_6IbJErrYhu3qfLwhAiLWrTTlZz6HEU3TMc6gZ69pIyRiGFoTU"; 
+import { enableNotificationSubscription } from '../services/pushNotifications';
 
 const NotificationPopup = () => {
   const [show, setShow] = useState(false);
@@ -27,38 +21,16 @@ const NotificationPopup = () => {
     localStorage.setItem('sareri_notification_asked', 'true');
 
     try {
-      if (!('Notification' in window)) {
-        console.warn('This browser does not support desktop notification');
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted' && messaging) {
-        // We attempt to get the token. 
-        // If VAPID_KEY is not set correctly, this might throw an error.
-        try {
-          const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
-          if (currentToken) {
-            // Save token to Firestore if it doesn't already exist
-            const tokensRef = collection(db, 'fcmTokens');
-            const q = query(tokensRef, where("token", "==", currentToken));
-            const querySnapshot = await getDocs(q);
-            
-            if (querySnapshot.empty) {
-              await addDoc(tokensRef, {
-                token: currentToken,
-                createdAt: new Date().toISOString()
-              });
-              console.log('Successfully subscribed to village notifications!');
-            }
-          } else {
-            console.log('No registration token available. Request permission to generate one.');
-          }
-        } catch (tokenErr) {
-          console.warn('Failed to get FCM token. (You may need to set the VAPID_KEY in code)', tokenErr);
-        }
+      const result = await enableNotificationSubscription();
+      if (result.status === 'registered') {
+        console.info('Village notifications are enabled on this device.');
+      } else if (result.status === 'denied') {
+        console.info('Notification permission is blocked in this browser.');
+      } else {
+        console.info('Notifications are unavailable in this browser or device context.');
       }
     } catch (error) {
-      console.error('An error occurred while requesting permission ', error);
+      console.error('Could not enable notifications.', error);
     }
   };
 

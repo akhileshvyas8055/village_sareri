@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db, rtdb } from '../../firebase';
-import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { ref, onValue, set as rtdbSet } from 'firebase/database';
+import { syncFirebaseAuthUsersPage } from '../../services/notificationApi';
 import { 
   FiUsers, 
   FiShield, 
@@ -21,10 +22,19 @@ const ROLES = [
   { id: 'admin', label: 'मुख्य व्यवस्थापक (Super Admin)', icon: '🛡️', color: 'bg-purple-100 text-purple-900 border-purple-300 font-bold' }
 ];
 
+const sortUsersNewestFirst = (users) => [...users].sort((a, b) => {
+  const aTime = new Date(a.creationTime || a.lastSignInTime || 0).getTime() || 0;
+  const bTime = new Date(b.creationTime || b.lastSignInTime || 0).getTime() || 0;
+  return bTime - aTime;
+});
+
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [rolesMap, setRolesMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [syncingAuthUsers, setSyncingAuthUsers] = useState(false);
+  const [authSyncProgress, setAuthSyncProgress] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [updatingUid, setUpdatingUid] = useState(null);
@@ -44,16 +54,65 @@ const ManageUsers = () => {
           ...data
         });
       });
-      setUsers(list);
+      setUsers(sortUsersNewestFirst(list));
+      setLoadError('');
     } catch (err) {
       console.error('Error fetching users:', err);
+      setLoadError('यूज़र सूची Firestore से लोड नहीं हो सकी। Firestore rules और admin access जाँचें।');
     } finally {
       setLoading(false);
     }
   };
 
+  const syncAuthUsers = async () => {
+    if (syncingAuthUsers) return;
+    setSyncingAuthUsers(true);
+    setAuthSyncProgress('Firebase Authentication users जाँचे जा रहे हैं…');
+    let pageToken = null;
+    let processed = 0;
+    let created = 0;
+    let updated = 0;
+
+    try {
+      do {
+        const result = await syncFirebaseAuthUsersPage(pageToken);
+        if (!result.success) throw new Error(result.error || 'Auth users sync failed.');
+        processed += result.processed || 0;
+        created += result.created || 0;
+        updated += result.updated || 0;
+        pageToken = result.nextPageToken || null;
+        setAuthSyncProgress(`${processed} Auth accounts जाँचे…`);
+      } while (pageToken);
+
+      setAuthSyncProgress('');
+      setAlertMsg({
+        type: 'success',
+        text: `Firebase Auth sync पूरा: ${processed} accounts जाँचे, ${created} नए Firestore records बने, ${updated} पुराने records पूरे किए।`,
+      });
+      window.setTimeout(() => setAlertMsg(null), 7000);
+    } catch (error) {
+      console.error('Firebase Auth user sync failed:', error);
+      setAuthSyncProgress('');
+      setAlertMsg({
+        type: 'error',
+        text: error.message || 'Firebase Auth users sync नहीं हो सका।',
+      });
+      window.setTimeout(() => setAlertMsg(null), 7000);
+    } finally {
+      setSyncingAuthUsers(false);
+    }
+  };
+
   useEffect(() => {
-    fetchAllUsers();
+    const usersUnsub = onSnapshot(collection(db, 'users'), (usersSnap) => {
+      setUsers(sortUsersNewestFirst(usersSnap.docs.map((d) => ({ uid: d.id, ...d.data() }))));
+      setLoadError('');
+      setLoading(false);
+    }, (err) => {
+      console.error('Error listening to users:', err);
+      setLoadError('यूज़र सूची Firestore से लोड नहीं हो सकी। Firestore rules और admin access जाँचें।');
+      setLoading(false);
+    });
 
     // Listen to real-time roles from RTDB userRoles
     const rolesRef = ref(rtdb, 'userRoles');
@@ -62,7 +121,10 @@ const ManageUsers = () => {
       setRolesMap(val);
     });
 
-    return () => unsub();
+    return () => {
+      usersUnsub();
+      unsub();
+    };
   }, []);
 
   const handleRoleChange = async (targetUser, newRole) => {
@@ -186,7 +248,20 @@ const ManageUsers = () => {
             <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-saffron' : ''}`} />
             रिफ्रेश करें
           </button>
+          <button
+            onClick={syncAuthUsers}
+            disabled={syncingAuthUsers}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-700 text-white hover:bg-purple-800 disabled:opacity-60 font-semibold text-sm transition-all shadow-sm"
+          >
+            <FiUserCheck className={`w-4 h-4 ${syncingAuthUsers ? 'animate-pulse' : ''}`} />
+            {syncingAuthUsers ? 'Auth users sync…' : 'Firebase Auth से sync'}
+          </button>
         </div>
+        {authSyncProgress && (
+          <p className="text-xs font-medium text-purple-700 mt-3" role="status" aria-live="polite">
+            {authSyncProgress}
+          </p>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
@@ -233,6 +308,12 @@ const ManageUsers = () => {
       </div>
 
       {/* Alert Banner */}
+      {loadError && (
+        <div className="p-4 rounded-xl border bg-rose-50 text-rose-900 border-rose-200 text-sm" role="alert">
+          {loadError}
+        </div>
+      )}
+
       {alertMsg && (
         <div
           className={`p-4 rounded-xl border flex items-center justify-between gap-3 animate-fade-in ${

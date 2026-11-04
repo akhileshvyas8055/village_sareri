@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, push, remove, update } from 'firebase/database';
 import { rtdb } from '../../firebase';
+import { sendNotificationRequest } from '../../services/notificationApi';
 import {
   FiTrash2,
   FiPlus,
@@ -62,17 +63,16 @@ const compressNoticeImage = (file) => {
 // Push notification trigger
 const triggerNoticeNotification = async (title, body, type = 'Panchayat Notice', link = '/notices') => {
   try {
-    const response = await fetch('/api/send-notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, type, link })
-    });
-    const result = await response.json();
-    return response.ok && result.success;
+    return await sendNotificationRequest({ title, body, type, link, audience: 'all' });
   } catch (error) {
     console.error('Error triggering notice notification:', error);
-    return false;
+    return { success: false, error: error.message };
   }
+};
+
+const notificationResultMessage = (result) => {
+  if (!result || !result.totalTargetedDevices) return 'No active subscribers matched this audience.';
+  return `FCM accepted ${result.fcmAcceptedCount || 0} of ${result.totalTargetedDevices} requests; ${result.failedCount || 0} failed. Device delivery is unconfirmed.`;
 };
 
 const ManageNotices = () => {
@@ -207,8 +207,9 @@ const ManageNotices = () => {
 
         // Trigger push notification for new notice
         const sendNotif = window.confirm(`क्या आप इस सूचना "${payload.title}" का अलर्ट सभी ग्रामीणों को भेजना चाहते हैं?`);
+        let pushResult = null;
         if (sendNotif) {
-          await triggerNoticeNotification(
+          pushResult = await triggerNoticeNotification(
             `📢 पंचायत सूचना: ${payload.title}`,
             `${payload.category} • ${payload.date} - विस्तृत विवरण देखने के लिए क्लिक करें`,
             'Panchayat Notice',
@@ -216,7 +217,7 @@ const ManageNotices = () => {
           );
         }
 
-        alert('नई सूचना सफलतापूर्वक जारी हो गई! (Notice published successfully)');
+        alert(`नई सूचना सफलतापूर्वक जारी हो गई! (Notice published successfully)${pushResult ? `\n${notificationResultMessage(pushResult)}` : ''}`);
       }
 
       setFormData(initialFormState);

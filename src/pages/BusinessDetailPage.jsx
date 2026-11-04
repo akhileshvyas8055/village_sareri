@@ -4,6 +4,7 @@ import { onAuthStateChanged, signInWithPopup } from 'firebase/auth';
 import { ref, onValue } from 'firebase/database';
 import { auth, googleProvider, rtdb } from '../firebase';
 import SEO from '../components/SEO';
+import NotFoundPage from './NotFoundPage';
 import {
   RESERVED_SLUGS,
   getBusinessBySlug,
@@ -38,10 +39,12 @@ import { FaWhatsapp } from 'react-icons/fa';
 const BusinessDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const initialSlug = (slug || '').toLowerCase().trim();
+  const initialNotFound = !initialSlug || RESERVED_SLUGS.has(initialSlug) || ['undefined', 'null'].includes(initialSlug);
 
   const [business, setBusiness] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(!initialNotFound);
+  const [notFound, setNotFound] = useState(initialNotFound);
   const [similarBusinesses, setSimilarBusinesses] = useState([]);
 
   // Reviews state
@@ -79,7 +82,7 @@ const BusinessDetailPage = () => {
     setNotFound(false);
 
     const cleanSlug = (slug || '').toLowerCase().trim();
-    if (!cleanSlug || RESERVED_SLUGS.has(cleanSlug)) {
+    if (!cleanSlug || RESERVED_SLUGS.has(cleanSlug) || ['undefined', 'null'].includes(cleanSlug)) {
       setNotFound(true);
       setLoading(false);
       return;
@@ -362,11 +365,17 @@ const BusinessDetailPage = () => {
   // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen pt-28 pb-16 flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0B1120]">
-        <div className="w-14 h-14 border-4 border-[#0D477A] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-slate-600 dark:text-slate-300 font-semibold text-sm animate-pulse">
-          दुकान विवरण लोड हो रहा है...
-        </p>
+      <div className="min-h-[70vh] bg-slate-50 px-4 py-8 dark:bg-[#0B1120]" role="status" aria-label="दुकान विवरण लोड हो रहा है">
+        <span className="sr-only">दुकान विवरण लोड हो रहा है…</span>
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="h-48 rounded-3xl bg-slate-200 dark:bg-slate-800 sm:h-64" />
+          <div className="mt-6 h-8 w-2/3 max-w-md rounded-lg bg-slate-200 dark:bg-slate-800" />
+          <div className="mt-3 h-4 w-1/2 max-w-sm rounded bg-slate-200 dark:bg-slate-800" />
+          <div className="mt-7 grid gap-4 sm:grid-cols-2">
+            <div className="h-28 rounded-2xl bg-white dark:bg-slate-800" />
+            <div className="h-28 rounded-2xl bg-white dark:bg-slate-800" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -374,36 +383,11 @@ const BusinessDetailPage = () => {
   // 404 / Business Not Found State
   if (notFound || !business) {
     return (
-      <div className="min-h-screen pt-28 pb-20 flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 px-4">
-        <SEO
-          title="दुकान नहीं मिली | Business Not Found - Brahmano Ki Sareri"
-          description="यह दुकान या व्यापार उपलब्ध नहीं है या व्यवस्थापक द्वारा अभी स्वीकृत नहीं किया गया है।"
-          url={`https://villagesareri.in/${slug}`}
-        />
-        <div className="text-center max-w-md mx-auto p-8 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-md">
-          <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center mx-auto mb-4">
-            <LuStore className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold font-heading mb-2">व्यापार उपलब्ध नहीं है</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-            आपके द्वारा खोजा गया वेब पता (<code className="text-rose-500 font-mono">/{slug}</code>) मान्य नहीं है या यह दुकान अभी स्वीकृत नहीं हुई है।
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/businesses"
-              className="w-full sm:w-auto px-5 py-2.5 bg-[#0D477A] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#09355C] transition-colors"
-            >
-              सभी दुकानें देखें (Browse Directory)
-            </Link>
-            <Link
-              to="/"
-              className="w-full sm:w-auto px-5 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              होमपेज पर जाएँ (Home)
-            </Link>
-          </div>
-        </div>
-      </div>
+      <NotFoundPage
+        title="यह पेज उपलब्ध नहीं है"
+        message={`/${slug} पेज नहीं मिला। लिंक गलत हो सकता है या यह पेज हटाया जा चुका है। सही पेज खोजने के लिए होम पेज पर जाएँ।`}
+        showBusinessDirectory
+      />
     );
   }
 

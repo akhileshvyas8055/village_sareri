@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FiBell, FiDownload, FiSettings, FiCheckCircle, FiInfo, FiUser, FiChevronRight } from 'react-icons/fi';
-import { getToken } from 'firebase/messaging';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { messaging, db } from '../firebase';
+import { enableNotificationSubscription } from '../services/pushNotifications';
 import LanguageToggle from '../components/LanguageToggle';
 import { FiGlobe, FiMoon, FiSun } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { isAppInstalled, promptPWAInstall } from '../utils/pwa';
 import InstallGuideModal from '../components/InstallGuideModal';
 import SEO from '../components/SEO';
-
-const VAPID_KEY = "BGJGryvnAKIvBHBdvq644OaBhX37nZ9JsDboA_6IbJErrYhu3qfLwhAiLWrTTlZz6HEU3TMc6gZ69pIyRiGFoTU"; 
 
 const SettingsPage = ({ darkMode, toggleDarkMode }) => {
   const [notificationStatus, setNotificationStatus] = useState('default');
@@ -21,6 +17,8 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
     // Check Notification status
     if ('Notification' in window) {
       setNotificationStatus(Notification.permission);
+    } else {
+      setNotificationStatus('unsupported');
     }
 
     setIsStandalone(isAppInstalled());
@@ -35,28 +33,21 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
 
   const handleEnableNotifications = async () => {
     try {
-      const permission = await Notification.requestPermission();
-      setNotificationStatus(permission);
-      
-      if (permission === 'granted' && messaging) {
-        const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
-        if (currentToken) {
-          const tokensRef = collection(db, 'fcmTokens');
-          const q = query(tokensRef, where("token", "==", currentToken));
-          const querySnapshot = await getDocs(q);
-          
-          if (querySnapshot.empty) {
-            await addDoc(tokensRef, {
-              token: currentToken,
-              createdAt: new Date().toISOString()
-            });
-            alert('Notifications enabled successfully!');
-          } else {
-            alert('Notifications are already active on this device.');
-          }
-        }
-      } else if (permission === 'denied') {
+      if (!('Notification' in window)) {
+        setNotificationStatus('unsupported');
+        alert('This browser does not support notifications.');
+        return;
+      }
+
+      const result = await enableNotificationSubscription();
+      if (result.status === 'registered') {
+        setNotificationStatus('granted');
+        alert('Notifications are enabled on this device.');
+      } else if (result.status === 'denied') {
+        setNotificationStatus('denied');
         alert('You have blocked notifications. Please unblock them from your browser site settings.');
+      } else {
+        alert('Notifications are unavailable in this browser or device context.');
       }
     } catch (error) {
       console.error('Error enabling notifications:', error);
@@ -175,12 +166,12 @@ const SettingsPage = ({ darkMode, toggleDarkMode }) => {
                 <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Current Status</span>
-                    <span className={`text-sm font-bold ${notificationStatus === 'granted' ? 'text-green-600' : notificationStatus === 'denied' ? 'text-red-500' : 'text-orange-500'}`}>
-                      {notificationStatus === 'granted' ? 'Enabled' : notificationStatus === 'denied' ? 'Blocked' : 'Not Configured'}
+                    <span className={`text-sm font-bold ${notificationStatus === 'granted' ? 'text-green-600' : notificationStatus === 'denied' ? 'text-red-500' : notificationStatus === 'unsupported' ? 'text-gray-500' : 'text-orange-500'}`}>
+                      {notificationStatus === 'granted' ? 'Enabled' : notificationStatus === 'denied' ? 'Blocked' : notificationStatus === 'unsupported' ? 'Unsupported' : 'Not Configured'}
                     </span>
                   </div>
                   
-                  {notificationStatus !== 'granted' ? (
+                  {notificationStatus !== 'granted' && notificationStatus !== 'unsupported' ? (
                     <button 
                       onClick={handleEnableNotifications}
                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md transition-colors"

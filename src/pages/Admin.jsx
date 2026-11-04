@@ -14,6 +14,15 @@ import { ref, onValue, set, remove, push, get, update } from 'firebase/database'
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db, rtdb, storage, googleProvider } from '../firebase';
+import {
+  cancelScheduledNotificationRequest,
+  formatKolkataDateTimeInput,
+  kolkataDateTimeInputToIso,
+  loadNotificationDashboard,
+  loadScheduledNotifications,
+  saveScheduledNotification,
+  sendNotificationRequest,
+} from '../services/notificationApi';
 import PanchayatAdmin from '../components/Admin/PanchayatAdmin';
 import ManageAchievements from '../components/Admin/ManageAchievements';
 import ManageEvents from '../components/Admin/ManageEvents';
@@ -63,14 +72,20 @@ const Admin = () => {
   const [notifyLink, setNotifyLink] = useState('');
   const [notifyType, setNotifyType] = useState('News Update');
   const [isSending, setIsSending] = useState(false);
+  const [notificationAudience, setNotificationAudience] = useState('all');
+  const [showNotificationPreview, setShowNotificationPreview] = useState(false);
+  const [notificationResult, setNotificationResult] = useState(null);
+  const [notificationDashboard, setNotificationDashboard] = useState({ stats: null, history: [] });
+  const [notificationDashboardLoading, setNotificationDashboardLoading] = useState(false);
+  const [notificationDashboardError, setNotificationDashboardError] = useState('');
   const [uploadingImageId, setUploadingImageId] = useState(null);
 
   // Scheduling State
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduleDateTime, setScheduleDateTime] = useState('');
-  const [scheduledTimers, setScheduledTimers] = useState([]);
-  const [countdown, setCountdown] = useState(null);
-  const [countdownInterval, setCountdownInterval] = useState(null);
+  const [editingScheduleId, setEditingScheduleId] = useState(null);
+  const [scheduledNotifications, setScheduledNotifications] = useState([]);
+  const [scheduledNotificationsLoading, setScheduledNotificationsLoading] = useState(false);
 
   // Poll State
   const [pollData, setPollData] = useState(null);
@@ -432,32 +447,59 @@ const Admin = () => {
     }
   };
 
-  const sendPushNotification = async (title, body, type = 'General', link = '') => {
+  const sendPushNotification = async (title, body, type = 'General', link = '', audience = notificationAudience) => {
     setIsSending(true);
     try {
-      // Call the completely free Vercel Serverless Function to broadcast the push!
-      // The API will also store the notification in Firestore for history.
-      const response = await fetch('/api/send-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, type, link })
+      const result = await sendNotificationRequest({ title, body, type, link, audience });
+      setNotificationResult(result);
+      loadNotificationDashboard().then((dashboard) => {
+        if (dashboard.success) setNotificationDashboard(dashboard);
       });
-      
-      const result = await response.json();
-      
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to send from Serverless API');
-      }
-
-      console.log('Push notification triggered successfully:', result);
-      setIsSending(false);
-      return true;
+      if (!result.success) console.warn('Notification request did not receive FCM acceptance:', result.error || result.status);
+      return result;
     } catch (error) {
       console.error('Error triggering push notification:', error);
+      return { success: false, status: 'Failed', error: error.message };
+    } finally {
       setIsSending(false);
-      return false;
     }
   };
+
+  const notificationResultMessage = (result) => {
+    if (!result) return 'The notification result is unavailable.';
+    const accepted = result.fcmAcceptedCount || 0;
+    const targeted = result.totalTargetedDevices || 0;
+    const failed = result.failedCount || 0;
+    if (targeted === 0) return 'No active subscribers matched this audience.';
+    if (accepted === 0) return `FCM accepted 0 of ${targeted} requests. ${result.error || 'Check notification history for details.'}`;
+    return `FCM accepted ${accepted} of ${targeted} requests; ${failed} failed (${result.invalidTokenCount || 0} invalid tokens). Device delivery is unconfirmed.`;
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'notifications' || !isAuthenticated) return undefined;
+    let isCurrent = true;
+    setNotificationDashboardLoading(true);
+    setNotificationDashboardError('');
+    setScheduledNotificationsLoading(true);
+    Promise.all([loadNotificationDashboard(), loadScheduledNotifications()])
+      .then(([dashboard, schedules]) => {
+        if (!isCurrent) return;
+        if (dashboard.success) {
+          setNotificationDashboard(dashboard);
+        } else {
+          setNotificationDashboardError(dashboard.error || 'Could not load notification statistics.');
+        }
+        if (schedules.success) setScheduledNotifications(schedules.scheduled || []);
+        else setNotificationDashboardError(schedules.error || 'Could not load scheduled notifications.');
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setNotificationDashboardLoading(false);
+          setScheduledNotificationsLoading(false);
+        }
+      });
+    return () => { isCurrent = false; };
+  }, [activeTab, isAuthenticated]);
 
   const handleSave = async () => {
     // Save to Firebase RTDB (source of truth)
@@ -472,8 +514,8 @@ const Admin = () => {
         const latest = news[0];
         // Confirm before sending to prevent accidental spam when just editing a typo
         if (window.confirm(`क्या आप लेटेस्ट न्यूज़ "${latest.title}" का Auto Push Notification सभी को भेजना चाहते हैं?`)) {
-          await handleCirculateNews(latest, true);
-          alert('News saved and notification sent successfully!');
+          const result = await handleCirculateNews(latest, true);
+          alert(`News saved. ${notificationResultMessage(result)}`);
           return;
         }
       }
@@ -496,15 +538,12 @@ const Admin = () => {
 
       const fullTitle = `${prefix}${item.title || 'Update'}`;
       
-      const success = await sendPushNotification(fullTitle, item.desc || 'Details are available on the website.', item.type || 'General');
+      const result = await sendPushNotification(fullTitle, item.desc || 'Details are available on the website.', item.type || 'General', '', 'all');
       
       if (!isSilent) {
-        if (success) {
-          alert('Notification circulated successfully to all users!');
-        } else {
-          alert('Failed to send notification. Check console for details.');
-        }
+        alert(notificationResultMessage(result));
       }
+      return result;
     }
   };
 
@@ -522,78 +561,75 @@ const Admin = () => {
   const handleManualPush = async (e) => {
     e.preventDefault();
     if (!notifyTitle || !notifyBody) return alert('Please enter both title and message.');
+    if (editingScheduleId && !isScheduled) return alert('Keep scheduling enabled while editing a scheduled notification.');
+    if (notificationAudience === 'all') {
+      const action = isScheduled ? 'schedule this notification for' : 'send this notification to';
+      if (!window.confirm(`Are you sure you want to ${action} all active subscribers? FCM acceptance does not confirm device delivery.`)) return;
+    }
     
     const fullTitle = `${getNotifyPrefix(notifyType)}${notifyTitle}`;
 
     if (isScheduled && scheduleDateTime) {
-      const scheduledTime = new Date(scheduleDateTime);
-      const now = new Date();
-      const delay = scheduledTime.getTime() - now.getTime();
-
-      if (delay <= 0) {
-        return alert('Please select a future date and time!');
+      const scheduledAt = kolkataDateTimeInputToIso(scheduleDateTime);
+      if (!scheduledAt || new Date(scheduledAt).getTime() <= Date.now()) {
+        return alert('Please select a valid future date and time in India.');
       }
 
-      // Start countdown
-      if (countdownInterval) clearInterval(countdownInterval);
-      const interval = setInterval(() => {
-        const remaining = scheduledTime.getTime() - Date.now();
-        if (remaining <= 0) {
-          clearInterval(interval);
-          setCountdown(null);
-          setCountdownInterval(null);
-        } else {
-          const h = Math.floor(remaining / 3600000);
-          const m = Math.floor((remaining % 3600000) / 60000);
-          const s = Math.floor((remaining % 60000) / 1000);
-          setCountdown(`${h}h ${m}m ${s}s`);
-        }
-      }, 1000);
-      setCountdownInterval(interval);
-
-      const timerId = setTimeout(async () => {
-        const success = await sendPushNotification(fullTitle, notifyBody, notifyType, notifyLink);
-        if (success) {
-          alert('⏰ Scheduled notification sent successfully!');
-        }
-        setCountdown(null);
-        setScheduledTimers(prev => prev.filter(t => t.id !== timerId));
-      }, delay);
-
-      setScheduledTimers(prev => [...prev, {
-        id: timerId,
-        title: notifyTitle,
+      setIsSending(true);
+      const result = await saveScheduledNotification({
+        title: fullTitle,
         body: notifyBody,
-        scheduledTime: scheduledTime.toLocaleString('en-IN'),
-      }]);
+        type: notifyType,
+        link: notifyLink || '/',
+        audience: notificationAudience,
+        scheduledAt,
+        timezone: 'Asia/Kolkata',
+      }, editingScheduleId);
+      setIsSending(false);
 
-      alert(`✅ Notification scheduled for ${scheduledTime.toLocaleString('en-IN')}!\n\n⚠️ Keep this Admin page open until the notification is sent.`);
+      if (!result.success) return alert(result.error || 'The scheduled notification could not be saved.');
+
+      const scheduleResult = await loadScheduledNotifications();
+      if (scheduleResult.success) setScheduledNotifications(scheduleResult.scheduled || []);
+      alert(`Notification saved for ${formatKolkataDateTimeInput(scheduledAt).replace('T', ' ')} IST. The free scheduler checks once daily around 5:30–6:30 AM IST, so it may run nearly a day after the selected time.`);
       setNotifyTitle('');
       setNotifyBody('');
       setNotifyLink('');
       setScheduleDateTime('');
       setIsScheduled(false);
+      setEditingScheduleId(null);
       return;
     }
     
-    const success = await sendPushNotification(fullTitle, notifyBody, notifyType, notifyLink);
-    if (success) {
-      alert('Notification sent successfully to all subscribed users!');
+    const result = await sendPushNotification(fullTitle, notifyBody, notifyType, notifyLink);
+    if (result.success) {
+      alert(notificationResultMessage(result));
       setNotifyTitle('');
       setNotifyBody('');
       setNotifyLink('');
     } else {
-      alert('Failed to send notification. Check console for details.');
+      alert(notificationResultMessage(result));
     }
   };
 
-  const cancelScheduledNotification = (timerId) => {
-    clearTimeout(timerId);
-    setScheduledTimers(prev => prev.filter(t => t.id !== timerId));
-    if (scheduledTimers.length <= 1) {
-      if (countdownInterval) clearInterval(countdownInterval);
-      setCountdown(null);
-    }
+  const editScheduledNotification = (item) => {
+    const prefix = getNotifyPrefix(item.type);
+    setNotifyTitle(item.title.startsWith(prefix) ? item.title.slice(prefix.length) : item.title);
+    setNotifyBody(item.body);
+    setNotifyLink(item.link === '/' ? '' : item.link);
+    setNotifyType(item.type);
+    setNotificationAudience(item.audience || 'all');
+    setScheduleDateTime(formatKolkataDateTimeInput(item.scheduledAt));
+    setEditingScheduleId(item.id);
+    setIsScheduled(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelScheduledNotification = async (id) => {
+    if (!window.confirm('Cancel this pending notification?')) return;
+    const result = await cancelScheduledNotificationRequest(id);
+    if (!result.success) return alert(result.error || 'The scheduled notification could not be cancelled.');
+    setScheduledNotifications((current) => current.filter((item) => item.id !== id));
   };
 
   const handleDeleteComplaint = (id) => {
@@ -1795,6 +1831,35 @@ const Admin = () => {
               <h2 className="text-xl font-bold">Send Push Notification</h2>
             </div>
             <p className="text-gray-500 text-sm mb-6">Send an instant alert to all villagers who have allowed notifications on their devices.</p>
+
+            {notificationDashboardError && <p className="mb-4 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">{notificationDashboardError}</p>}
+            {notificationDashboardLoading && <p className="mb-4 text-sm text-gray-500">Loading registered device statistics…</p>}
+            {notificationDashboard.stats && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {[
+                  ['Registered devices', notificationDashboard.stats.totalRegisteredDevices],
+                  ['Active tokens', notificationDashboard.stats.activeTokens],
+                  ['Android', notificationDashboard.stats.androidDevices],
+                  ['iOS', notificationDashboard.stats.iosDevices],
+                  ['Desktop', notificationDashboard.stats.desktopDevices],
+                  ['Unclassified', notificationDashboard.stats.unclassifiedDevices],
+                  ['Inactive / invalid', notificationDashboard.stats.inactiveOrInvalidTokens],
+                ].map(([label, value]) => (
+                  <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xl font-bold text-gray-900 mt-1">{value ?? 0}</p>
+                  </div>
+                ))}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 col-span-2 lg:col-span-1">
+                  <p className="text-xs text-gray-500">Latest device activity (IST)</p>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {notificationDashboard.stats.lastSeen
+                      ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(notificationDashboard.stats.lastSeen))
+                      : 'No last-seen data yet'}
+                  </p>
+                </div>
+              </div>
+            )}
             
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-2xl">
               <form onSubmit={handleManualPush} className="space-y-6">
@@ -1813,6 +1878,20 @@ const Admin = () => {
                     <option value="Festival Announcement">🎆 Festival Announcement</option>
                     <option value="Emergency Alert">🚨 Emergency Alert</option>
                     <option value="Panchayat Notice">📜 Panchayat Notice</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Target Audience</label>
+                  <select
+                    value={notificationAudience}
+                    onChange={(e) => setNotificationAudience(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 text-gray-800 font-medium"
+                  >
+                    <option value="all">All active subscribers</option>
+                    <option value="android">Android devices</option>
+                    <option value="ios">iOS devices</option>
+                    <option value="desktop">Desktop devices</option>
                   </select>
                 </div>
 
@@ -1849,10 +1928,31 @@ const Admin = () => {
                     type="url"
                     value={notifyLink}
                     onChange={(e) => setNotifyLink(e.target.value)}
-                    placeholder="e.g. https://brahmanokisareri.com/news"
+                    placeholder="e.g. https://www.villagesareri.in/news"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 font-medium"
                   />
                   <p className="text-xs text-gray-400 mt-1 text-left">The link that opens when users tap on the notification.</p>
+                </div>
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowNotificationPreview((visible) => !visible)}
+                    className="text-sm font-semibold text-indigo-700 hover:text-indigo-900"
+                  >
+                    {showNotificationPreview ? 'Hide preview' : 'Preview before sending'}
+                  </button>
+                  {showNotificationPreview && (
+                    <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-orange-700 font-bold">Village Sareri notification preview</p>
+                      <p className="mt-2 font-bold text-gray-900">{notifyTitle ? `${getNotifyPrefix(notifyType)}${notifyTitle}` : 'Notification title'}</p>
+                      <p className="mt-1 text-sm text-gray-700">{notifyBody || 'Your message will appear here.'}</p>
+                      <p className="mt-3 text-xs text-gray-500">
+                        Audience: {notificationAudience === 'all' ? 'All active subscribers' : `${notificationAudience.toUpperCase()} devices`}
+                        {notifyLink && ` · Link: ${notifyLink}`}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Schedule Toggle */}
@@ -1861,13 +1961,14 @@ const Admin = () => {
                     <div className="flex items-center gap-3">
                       <FiClock className="w-5 h-5 text-indigo-500" />
                       <div>
-                        <p className="font-semibold text-gray-700 text-sm">Schedule for Later</p>
-                        <p className="text-xs text-gray-400">Set a specific date & time</p>
+                        <p className="font-semibold text-gray-700 text-sm">{editingScheduleId ? 'Edit Scheduled Notification' : 'Schedule for Later'}</p>
+                        <p className="text-xs text-gray-400">Saved on the server; the Admin Panel can be closed</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsScheduled(!isScheduled)}
+                      disabled={Boolean(editingScheduleId)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isScheduled ? 'bg-indigo-500' : 'bg-gray-300'}`}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${isScheduled ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -1880,10 +1981,13 @@ const Admin = () => {
                         type="datetime-local"
                         value={scheduleDateTime}
                         onChange={(e) => setScheduleDateTime(e.target.value)}
-                        min={new Date().toISOString().slice(0, 16)}
+                        min={formatKolkataDateTimeInput()}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white font-medium text-gray-800"
                         required={isScheduled}
                       />
+                      <p className="text-xs text-amber-700 mt-2">
+                        Uses Asia/Kolkata time. On the free Vercel plan, processing runs once daily around 5:30–6:30 AM IST; a notification may arrive nearly 24 hours after its selected time.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1895,40 +1999,124 @@ const Admin = () => {
                     className={`flex items-center justify-center gap-2 w-full ${isScheduled ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/30' : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/30'} text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {isScheduled ? <FiClock className="w-5 h-5" /> : <FiSend className="w-5 h-5" />}
-                    {isSending ? 'Sending...' : isScheduled ? 'Schedule Notification' : 'Broadcast Notification Now'}
+                    {isSending ? (editingScheduleId ? 'Saving...' : isScheduled ? 'Scheduling...' : 'Sending...') : editingScheduleId ? 'Update Scheduled Notification' : isScheduled ? 'Schedule Notification' : 'Broadcast Notification Now'}
                   </button>
                   <p className="text-xs text-center text-gray-400 mt-4">
-                    {isScheduled ? '⚠️ Keep admin page open until scheduled time.' : 'Notifications are dispatched via Firebase Cloud Messaging.'}
+                    {isScheduled ? 'FCM acceptance will be recorded; device delivery cannot be confirmed.' : 'Notifications are dispatched via Firebase Cloud Messaging.'}
                   </p>
                 </div>
               </form>
             </div>
 
-            {/* Active Scheduled Notifications */}
-            {scheduledTimers.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-2xl mt-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FiClock className="text-amber-500" /> Scheduled Notifications
-                  {countdown && <span className="text-sm font-normal text-amber-600 bg-amber-50 px-3 py-1 rounded-full">⏱️ {countdown}</span>}
-                </h3>
+            {notificationResult && (
+              <div className={`max-w-2xl mt-5 rounded-2xl border p-5 ${notificationResult.success ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`} role="status" aria-live="polite">
+                <h3 className="font-bold text-gray-900">Latest send result: {notificationResult.status || 'Failed'}</h3>
+                <p className="text-sm text-gray-700 mt-2">{notificationResultMessage(notificationResult)}</p>
+                {notificationResult.error && <p className="text-sm text-red-700 mt-2">{notificationResult.error}</p>}
+                {notificationResult.errors && Object.keys(notificationResult.errors).length > 0 && (
+                  <p className="text-xs text-gray-600 mt-2">Error types: {Object.entries(notificationResult.errors).map(([code, count]) => `${code} (${count})`).join(', ')}</p>
+                )}
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-2xl mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FiClock className="text-amber-500" /> Scheduled Notifications
+              </h3>
+              {scheduledNotificationsLoading ? (
+                <p className="text-sm text-gray-500">Loading scheduled notifications…</p>
+              ) : scheduledNotifications.length === 0 ? (
+                <p className="text-sm text-gray-500">No pending scheduled notifications.</p>
+              ) : (
                 <div className="space-y-3">
-                  {scheduledTimers.map((timer) => (
-                    <div key={timer.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-4">
-                      <div>
-                        <p className="font-bold text-gray-800 text-sm">{timer.title}</p>
-                        <p className="text-xs text-gray-500">📅 {timer.scheduledTime}</p>
+                  {scheduledNotifications.map((item) => (
+                    <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-800 text-sm break-words">{item.title}</p>
+                        <p className="text-xs text-gray-600 mt-1">{item.scheduledAt ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.scheduledAt)) : 'Time unavailable'} IST · {item.audience} · {item.status}</p>
+                        <p className="text-xs text-gray-500 mt-1 break-words">{item.body}</p>
                       </div>
-                      <button
-                        onClick={() => cancelScheduledNotification(timer.id)}
-                        className="text-red-500 hover:text-red-700 text-sm font-bold bg-white px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
+                      {item.status === 'Scheduled' && (
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => editScheduledNotification(item)}
+                            className="text-indigo-700 hover:text-indigo-900 text-sm font-bold bg-white px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => cancelScheduledNotification(item.id)}
+                            className="text-red-600 hover:text-red-800 text-sm font-bold bg-white px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mt-6">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Notification History</h3>
+                  <p className="text-xs text-gray-500 mt-1">FCM acceptance is shown; device delivery is unconfirmed.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadNotificationDashboard().then((dashboard) => dashboard.success && setNotificationDashboard(dashboard))}
+                  className="text-sm font-semibold text-indigo-700 hover:text-indigo-900"
+                >
+                  Refresh
+                </button>
               </div>
-            )}
+              {notificationDashboard.history.length === 0 ? (
+                <p className="text-sm text-gray-500">{notificationDashboardLoading ? 'Loading history…' : 'No notification history is available yet.'}</p>
+              ) : (
+                <div className="space-y-3">
+                  {notificationDashboard.history.map((item) => {
+                    const statusColor = item.status === 'FCM Accepted'
+                      ? 'bg-green-100 text-green-800'
+                      : item.status === 'Partially Failed'
+                        ? 'bg-amber-100 text-amber-800'
+                        : item.status === 'Failed'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-700';
+                    const dateLabel = item.createdAt
+                      ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.createdAt))
+                      : 'Date unavailable';
+
+                    return (
+                      <article key={item.id} className="rounded-xl border border-gray-200 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-gray-900 break-words">{item.title || 'Untitled notification'}</h4>
+                            <p className="text-sm text-gray-600 mt-1 break-words">{item.body}</p>
+                          </div>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusColor}`}>{item.status}</span>
+                        </div>
+                        <div className="mt-3 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+                          <span>Audience: {item.targetAudience}</span>
+                          <span>{dateLabel} IST</span>
+                          <span>By: {item.createdBy}</span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                          <span>Targeted: <strong>{item.totalTargetedDevices}</strong></span>
+                          <span>FCM accepted: <strong>{item.fcmAcceptedCount}</strong></span>
+                          <span>Failed: <strong>{item.failedCount}</strong></span>
+                          <span>Invalid: <strong>{item.invalidTokenCount}</strong></span>
+                        </div>
+                        {!item.deliveryConfirmed && <p className="text-xs text-gray-500 mt-2">Device delivery has not been confirmed.</p>}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
